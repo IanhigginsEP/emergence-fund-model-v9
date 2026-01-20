@@ -1,5 +1,5 @@
 // config/assumptions.js - All editable model inputs
-// v9.4: All USD, $367K starting pot, updated personnel/opex
+// v9.5: All USD, $367K starting pot, updated recoverables spec
 
 window.FundModel = window.FundModel || {};
 
@@ -16,34 +16,12 @@ window.FundModel.FUNDING = {
 };
 
 window.FundModel.PERSONNEL = {
-  ian: {
-    preBESalary: 5000,
-    postBESalary: 10000,
-    treatAsRollUp: true,
-  },
-  paul: {
-    preBESalary: 5000,
-    postBESalary: 10000,
-    treatAsRollUp: false,
-    cashDrawToggle: true,
-  },
-  lewis: {
-    monthlySalary: 7000,
-    startMonth: -5,
-    durationMonths: 12,
-  },
-  emma: {
-    monthlySalary: 1000,
-    startMonth: 0,
-  },
-  adrian: {
-    monthlySalary: 1800,
-    startMonth: -6,
-  },
-  chairman: {
-    quarterlyAmount: 5000,
-    startMonth: 4,
-  },
+  ian: { preBESalary: 5000, postBESalary: 10000, treatAsRollUp: true },
+  paul: { preBESalary: 5000, postBESalary: 10000, treatAsRollUp: false, cashDrawToggle: true },
+  lewis: { monthlySalary: 7000, startMonth: -5, durationMonths: 12 },
+  emma: { monthlySalary: 1000, startMonth: 0 },
+  adrian: { monthlySalary: 1800, startMonth: -6 },
+  chairman: { quarterlyAmount: 5000, startMonth: 4 },
 };
 
 window.FundModel.OPEX = {
@@ -52,18 +30,8 @@ window.FundModel.OPEX = {
   office: 600,
   tech: 400,
   mobile: 200,
-  marketing: {
-    preBE: 0,
-    postBE: 1000,
-    budgetPreBE: 6000,
-    inverse: true,
-  },
-  travel: {
-    preBE: 500,
-    postBE: 1000,
-    budgetPreBE: 6000,
-    inverse: true,
-  },
+  marketing: { preBE: 0, postBE: 1000, budgetPreBE: 6000, inverse: true },
+  travel: { preBE: 500, postBE: 1000, budgetPreBE: 6000, inverse: true },
   setupCost: 10000,
 };
 
@@ -85,13 +53,14 @@ window.FundModel.REVENUE = {
 
 window.FundModel.SHAREHOLDER_LOAN = {
   initialItems: [
-    { description: 'Pre-model setup costs', amount: 50000 },
-    { description: 'PPM legal/drafting', amount: 15000 },
+    { description: 'Setup invoices (actuals)', amount: 10000 },
+    { description: 'PPM legal fees', amount: 15000 },
+    { description: 'Adrian historical', amount: 8000 },
     { description: 'Historical travel', amount: 6000 },
-    { description: 'Historical salaries (Adrian)', amount: 8000 },
     { description: 'US Feeder Fund (wash)', amount: 30000 },
     { description: 'Ian personal costs', amount: 100000 },
   ],
+  usFeederWash: { out: 30000, in: 30000 },
   repaymentStartYear: 3,
   interestRate: 0.05,
 };
@@ -107,7 +76,6 @@ window.FundModel.DOWNSIDE = {
   capitalMultiplier: 0.5,
 };
 
-// Legacy compatibility mapping
 window.FundModel.DEFAULT_ASSUMPTIONS = {
   projectionMonths: window.FundModel.TIMELINE.projectionMonths,
   preLaunchMonths: window.FundModel.TIMELINE.preLaunchMonths,

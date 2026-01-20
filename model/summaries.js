@@ -1,5 +1,5 @@
-// model/summaries.js - Calculate annual summaries and utility functions
-// v9.4: Added startingCashUSD to output, bracket formatting
+// model/summaries.js - Calculate annual summaries
+// v9.5: Added newAUM, redemptions to yearly summaries
 
 window.FundModel = window.FundModel || {};
 
@@ -22,11 +22,7 @@ window.FundModel.formatPercent = function(v, decimals) {
 
 window.FundModel.calculateFounderSplit = function(totalFunding) {
   totalFunding = totalFunding || 0;
-  return {
-    total: totalFunding,
-    ian: totalFunding * 0.5,
-    paul: totalFunding * 0.5,
-  };
+  return { total: totalFunding, ian: totalFunding * 0.5, paul: totalFunding * 0.5 };
 };
 
 window.FundModel.calculateSummaries = function(months, startingCashUSD) {
@@ -47,6 +43,7 @@ window.FundModel.calculateSummaries = function(months, startingCashUSD) {
     ebitda: sumF(arr, 'ebitda'),
     totalExpenses: sumF(arr, 'totalExpenses'),
     totalRedemptions: sumF(arr, 'redemption'),
+    newAUM: sumF(arr, 'newCapital'),
     totalLPCapital: sumF(arr, 'lpCapital'),
     netCash: lastOf(arr, 'closingCash'),
     founderFunding: sumF(arr, 'founderFundingRequired'),
@@ -64,6 +61,8 @@ window.FundModel.calculateSummaries = function(months, startingCashUSD) {
       totalCarry: y1S.totalCarry + y2S.totalCarry + y3S.totalCarry,
       ebitda: y1S.ebitda + y2S.ebitda + y3S.ebitda,
       totalExpenses: y1S.totalExpenses + y2S.totalExpenses + y3S.totalExpenses,
+      newAUM: y1S.newAUM + y2S.newAUM + y3S.newAUM,
+      totalRedemptions: y1S.totalRedemptions + y2S.totalRedemptions + y3S.totalRedemptions,
       totalLPCapital: y1S.totalLPCapital + y2S.totalLPCapital + y3S.totalLPCapital,
       totalFounderFunding: y1S.founderFunding + y2S.founderFunding + y3S.founderFunding,
     },
