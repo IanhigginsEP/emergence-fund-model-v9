@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Emergence Partners Fund P&L Model v9 (Modular)</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    @media print { .no-print { display: none !important; } }
+    .collapsible { max-height: 0; overflow: hidden; transition: max-height 0.3s ease-out; }
+    .collapsible.open { max-height: 2000px; }
+  </style>
+</head>
+<body class="bg-gray-100">
+  <div id="root"><p class="p-8 text-center text-gray-500">Loading modular components...</p></div>
+  
+  <!-- 1. Config Modules -->
+  <script src="config/assumptions.js"></script>
+  <script src="config/scenarios.js"></script>
+  <script src="config/capital.js"></script>
+  
+  <!-- 2. Model Modules -->
+  <script src="model/formatters.js"></script>
+  <script src="model/engine.js"></script>
+  <script src="model/summaries.js"></script>
+  <script src="model/recoverables.js"></script>
+  
+  <!-- 3. UI Components -->
+  <script src="ui/Charts.js" type="text/babel"></script>
+  <script src="ui/Controls.js" type="text/babel"></script>
+  <script src="ui/Dashboard.js" type="text/babel"></script>
+  <script src="ui/FundingSchedule.js" type="text/babel"></script>
+  <script src="ui/PrintView.js" type="text/babel"></script>
+  <script src="ui/Scenarios.js" type="text/babel"></script>
+  <script src="ui/Sensitivity.js" type="text/babel"></script>
+  <script src="ui/Tables.js" type="text/babel"></script>
+  <script src="ui/Timeline.js" type="text/babel"></script>
+  <script src="ui/Waterfall.js" type="text/babel"></script>
+  <script src="ui/WhatIf.js" type="text/babel"></script>
+  
+  <!-- 4. Main App Shell -->
+  <script type="text/babel">
+    const { useState, useMemo } = React;
+    const FM = window.FundModel;
+    
+    function App() {
+      const [tab, setTab] = useState('dashboard');
+      const [scenarioKey, setScenarioKey] = useState('Base');
+      const [assumptions, setAssumptions] = useState(FM.DEFAULT_ASSUMPTIONS);
+      const [recoverableToggles, setRecoverableToggles] = useState({});
+      
+      const scenario = FM.PRESET_SCENARIOS[scenarioKey] || FM.PRESET_SCENARIOS['Base'];
+      
+      const baseCapital = useMemo(() => 
+        FM.generateCapitalInputs(assumptions.preLaunchMonths, assumptions.projectionMonths),
+        [assumptions.preLaunchMonths, assumptions.projectionMonths]
+      );
+      
+      const capitalInputs = useMemo(() => 
+        FM.applyMultipliers(baseCapital, scenario),
+        [baseCapital, scenario]
+      );
+      
+      const model = useMemo(() => {
+        const result = FM.runModel(assumptions, capitalInputs, scenario.annualReturn || 1.0, scenario.bdmRevenueShare || 0);
+        const summary = FM.calculateSummaries(result.months);
+        return { ...result, summary };
+      }, [assumptions, capitalInputs, scenario.annualReturn, scenario.bdmRevenueShare]);
+      
+      const recoverables = useMemo(() => 
+        FM.calculateRecoverables ? FM.calculateRecoverables(model, recoverableToggles) : { items: [], totalRecoverable: 0 }, 
+        [model, recoverableToggles]
+      );
+      
+      const updateAssumption = (key, value) => setAssumptions(prev => ({ ...prev, [key]: value }));
+      const resetScenario = () => setScenarioKey('Base');
+      
+      const tabs = [
+        { id: 'dashboard', label: 'Dashboard' },
+        { id: 'scenarios', label: '🎯 Scenarios' },
+        { id: 'cashflow', label: 'Cash Flow' },
+        { id: 'charts', label: 'Charts' },
+        { id: 'assumptions', label: 'Assumptions' },
+        { id: 'recoverables', label: 'Recoverables' },
+      ];
+      
+      return (
+        <div className="p-4 max-w-7xl mx-auto">
+          <div className="bg-white rounded-lg shadow p-4 mb-4">
+            <div className="flex justify-between items-center">
+              <div>
+                <h1 className="text-2xl font-bold text-gray-800">
+                  Emergence Partners Fund Model <span className="text-green-600">v9</span>
+                  <span className="ml-2 text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded">MODULAR</span>
+                </h1>
+                <p className="text-sm text-gray-500">36-Month Projection • Bootstrapped • PPM Compliant</p>
+              </div>
+              <div className="text-right">
+                <p className="text-xs text-gray-500 uppercase">Active Scenario</p>
+                <select value={scenarioKey} onChange={e => setScenarioKey(e.target.value)}
+                  className="mt-1 px-3 py-2 border rounded-lg font-semibold text-blue-600 border-blue-400">
+                  {Object.keys(FM.PRESET_SCENARIOS).map(key => (
+                    <option key={key} value={key}>{key}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+          </div>
+          
+          <div className="flex gap-2 mb-4 flex-wrap no-print">
+            {tabs.map(t => (
+              <button key={t.id} onClick={() => setTab(t.id)}
+                className={`px-4 py-2 rounded-lg font-medium text-sm transition ${
+                  tab === t.id ? 'bg-blue-600 text-white' : 'bg-white text-gray-600 hover:bg-gray-100'
+                }`}>
+                {t.label}
+              </button>
+            ))}
+          </div>
+          
+          {tab === 'dashboard' && FM.Dashboard && (
+            <FM.Dashboard model={model} scenarioName={scenarioKey} onResetScenario={resetScenario} />
+          )}
+          
+          {tab === 'scenarios' && FM.Scenarios && (
+            <FM.Scenarios 
+              model={model}
+              scenarioName={scenarioKey}
+              assumptions={assumptions}
+              baseCapitalInputs={baseCapital}
+              onApplyPreset={setScenarioKey}
+            />
+          )}
+          
+          {tab === 'cashflow' && FM.CashflowStatement && (
+            <FM.CashflowStatement model={model} />
+          )}
+          
+          {tab === 'charts' && (
+            <div className="space-y-4">
+              {FM.AUMChart && <FM.AUMChart model={model} />}
+              {FM.CashChart && <FM.CashChart model={model} />}
+              {FM.FounderFundingChart && <FM.FounderFundingChart model={model} />}
+            </div>
+          )}
+          
+          {tab === 'assumptions' && FM.Controls && (
+            <FM.Controls assumptions={assumptions} onUpdate={updateAssumption} />
+          )}
+          
+          {tab === 'recoverables' && FM.RecoverablesPanel && (
+            <FM.RecoverablesPanel recoverables={recoverables} toggles={recoverableToggles} onToggle={setRecoverableToggles} />
+          )}
+          
+          <div className="mt-4 text-xs text-gray-400 text-center no-print">
+            <span className="text-blue-600">Blue = Capital</span> | 
+            <span className="text-green-600"> Green = Revenue</span> | 
+            <span className="text-purple-600"> Purple = Carry</span> | 
+            <span className="text-red-600"> Red = Expenses</span> | 
+            <span className="text-amber-600"> Amber = Founder Funding</span>
+          </div>
+        </div>
+      );
+    }
+    
+    ReactDOM.render(<App />, document.getElementById('root'));
+  </script>
+</body>
+</html>
