@@ -1,5 +1,5 @@
 // config/assumptions.js - All editable model inputs
-// v9.3: Major update - 24mo horizon, new personnel/opex, carry below line
+// v9.4: All USD, $367K starting pot, updated personnel/opex
 
 window.FundModel = window.FundModel || {};
 
@@ -11,9 +11,8 @@ window.FundModel.TIMELINE = {
   targetBreakevenMonth: 7,
 };
 
-window.FundModel.FX = {
-  gbpToUsd: 1.27,
-  eurToUsd: 1.08,
+window.FundModel.FUNDING = {
+  startingCashUSD: 367000,
 };
 
 window.FundModel.PERSONNEL = {
@@ -26,9 +25,10 @@ window.FundModel.PERSONNEL = {
     preBESalary: 5000,
     postBESalary: 10000,
     treatAsRollUp: false,
+    cashDrawToggle: true,
   },
   lewis: {
-    monthlySalary: 8850,
+    monthlySalary: 7000,
     startMonth: -5,
     durationMonths: 12,
   },
@@ -37,7 +37,7 @@ window.FundModel.PERSONNEL = {
     startMonth: 0,
   },
   adrian: {
-    monthlySalary: 2300,
+    monthlySalary: 1800,
     startMonth: -6,
   },
   chairman: {
@@ -47,11 +47,11 @@ window.FundModel.PERSONNEL = {
 };
 
 window.FundModel.OPEX = {
-  leventus: 6300,
-  adminCustodial: 1600,
-  office: 760,
-  tech: 500,
-  mobile: 250,
+  leventus: 5000,
+  adminCustodial: 1500,
+  office: 600,
+  tech: 400,
+  mobile: 200,
   marketing: {
     preBE: 0,
     postBE: 1000,
@@ -89,15 +89,11 @@ window.FundModel.SHAREHOLDER_LOAN = {
     { description: 'PPM legal/drafting', amount: 15000 },
     { description: 'Historical travel', amount: 6000 },
     { description: 'Historical salaries (Adrian)', amount: 8000 },
-    { description: 'US Feeder Fund', amount: 30000 },
-    { description: 'Ians personal costs', amount: 100000 },
+    { description: 'US Feeder Fund (wash)', amount: 30000 },
+    { description: 'Ian personal costs', amount: 100000 },
   ],
-};
-
-window.FundModel.STONE_PARK = {
-  totalEUR: 550000,
-  founderSharePct: 0.6667,
-  availableBalanceEUR: 50000,
+  repaymentStartYear: 3,
+  interestRate: 0.05,
 };
 
 window.FundModel.CAPITAL = {
@@ -111,59 +107,34 @@ window.FundModel.DOWNSIDE = {
   capitalMultiplier: 0.5,
 };
 
-// Legacy compatibility - FULL mapping to engine expectations
-window.FundModel.DEFAULT_FX_RATES = window.FundModel.FX;
+// Legacy compatibility mapping
 window.FundModel.DEFAULT_ASSUMPTIONS = {
-  // Timeline
   projectionMonths: window.FundModel.TIMELINE.projectionMonths,
   preLaunchMonths: window.FundModel.TIMELINE.preLaunchMonths,
-  
-  // FX Rates
-  fxRates: { ...window.FundModel.FX },
-  
-  // Fund Economics
+  startingCashUSD: window.FundModel.FUNDING.startingCashUSD,
   mgmtFeeAnnual: window.FundModel.FUND_ECONOMICS.mgmtFeeAnnual,
   carryRatePrivate: window.FundModel.FUND_ECONOMICS.carryRate,
   carryRatePublic: window.FundModel.FUND_ECONOMICS.carryRate,
   annualReturn: window.FundModel.FUND_ECONOMICS.annualReturn,
   publicWeight: window.FundModel.FUND_ECONOMICS.publicWeight,
   gpCommitmentRate: window.FundModel.FUND_ECONOMICS.gpCommitmentRate,
-  
-  // Stone Park
-  stonePark: {
-    totalEUR: window.FundModel.STONE_PARK.totalEUR,
-    founderSharePct: window.FundModel.STONE_PARK.founderSharePct,
-    availableBalanceEUR: window.FundModel.STONE_PARK.availableBalanceEUR,
-  },
-  
-  // Ian & Paul Salaries
   ianSalaryPre: window.FundModel.PERSONNEL.ian.preBESalary,
   ianSalaryPost: window.FundModel.PERSONNEL.ian.postBESalary,
   paulSalaryPre: window.FundModel.PERSONNEL.paul.preBESalary,
   paulSalaryPost: window.FundModel.PERSONNEL.paul.postBESalary,
-  
-  // Lewis
   lewisSalary: window.FundModel.PERSONNEL.lewis.monthlySalary,
   lewisStartMonth: window.FundModel.PERSONNEL.lewis.startMonth,
   lewisMonths: window.FundModel.PERSONNEL.lewis.durationMonths,
-  
-  // EA (Emma)
-  eaSalaryGBP: window.FundModel.PERSONNEL.emma.monthlySalary,
+  eaSalary: window.FundModel.PERSONNEL.emma.monthlySalary,
   eaStartMonth: window.FundModel.PERSONNEL.emma.startMonth,
-  
-  // Chairman
   chairmanSalary: window.FundModel.PERSONNEL.chairman.quarterlyAmount,
   chairmanStartMonth: window.FundModel.PERSONNEL.chairman.startMonth,
-  
-  // OpEx - Direct values for engine
   officeIT: window.FundModel.OPEX.office + window.FundModel.OPEX.tech + window.FundModel.OPEX.mobile,
   marketing: window.FundModel.OPEX.marketing.preBE,
   marketingStopsAtBreakeven: false,
   travel: window.FundModel.OPEX.travel.preBE,
   compliance: window.FundModel.OPEX.leventus + window.FundModel.OPEX.adminCustodial,
   setupCost: window.FundModel.OPEX.setupCost,
-  
-  // Broker
   brokerStartMonth: window.FundModel.CAPITAL.brokerRaise.startMonth,
   brokerCommissionRate: window.FundModel.CAPITAL.brokerRaise.commissionRate,
 };
