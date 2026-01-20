@@ -1,5 +1,5 @@
 // ui/KPITable.js — KPI metrics table with Revenue/AUM and EBITDA/AUM
-// Part of v9.3 LP Enhancement Batch 3
+// v9.3.1: Fixed to show post-launch months M0-M11 (not pre-launch)
 
 window.FundModel = window.FundModel || {};
 
@@ -12,13 +12,10 @@ window.FundModel.KPITable = function KPITable({ model }) {
       month: m.month,
       label: `M${m.month}`,
       rollingAUM: m.closingAUM,
-      newAUM: (m.lpCapital || 0) + (m.gpCommit || 0),
+      newAUM: (m.lpCapital || 0) + (m.gpCommit || m.gpCommitment || 0),
       redemptions: m.redemption || 0,
-      // Use operatingRevenue (v9.3) or totalRevenue (legacy)
       revenue: m.operatingRevenue || m.totalRevenue || 0,
-      // Use ebitda (v9.3) or ebt (legacy)
       ebitda: m.ebitda !== undefined ? m.ebitda : m.ebt || 0,
-      // Annualized yields
       revenueYield: m.closingAUM > 0 ? ((m.operatingRevenue || m.totalRevenue || 0) / m.closingAUM) * 12 * 100 : 0,
       ebitdaEfficiency: m.closingAUM > 0 ? ((m.ebitda !== undefined ? m.ebitda : m.ebt || 0) / m.closingAUM) * 12 * 100 : 0,
     }));
@@ -35,8 +32,8 @@ window.FundModel.KPITable = function KPITable({ model }) {
   
   const pct = (v) => `${v.toFixed(2)}%`;
   
-  // Show first 12 months (Year 1)
-  const year1 = kpis.slice(0, 12);
+  // Filter for post-launch months (M0+) then take first 12 (Year 1)
+  const year1 = kpis.filter(k => k.month >= 0).slice(0, 12);
   
   return (
     <div className="bg-white rounded-lg shadow p-4 overflow-x-auto">

@@ -1,6 +1,5 @@
 // model/summaries.js - Calculate annual summaries and utility functions
-// v8.2: Window globals for GitHub Pages
-// v8.5: Added calculateFounderSplit and formatCurrency alias
+// v9.3.1: Fixed field names for carry, added EBITDA and operatingRevenue
 
 window.FundModel = window.FundModel || {};
 
@@ -35,8 +34,10 @@ window.FundModel.calculateSummaries = function(months) {
   const sumY = (arr) => ({
     endingAUM: lastOf(arr, 'closingAUM'),
     totalRevenue: sumF(arr, 'totalRevenue'),
+    operatingRevenue: sumF(arr, 'operatingRevenue'),
     totalMgmtFee: sumF(arr, 'mgmtFee'),
-    totalCarry: sumF(arr, 'totalCarry'),
+    totalCarry: sumF(arr, 'carryRevenue'),
+    ebitda: sumF(arr, 'ebitda'),
     totalExpenses: sumF(arr, 'totalExpenses'),
     totalRedemptions: sumF(arr, 'redemption'),
     totalLPCapital: sumF(arr, 'lpCapital'),
@@ -50,8 +51,10 @@ window.FundModel.calculateSummaries = function(months) {
     y1: y1S, y2: y2S, y3: y3S,
     totals: {
       totalRevenue: y1S.totalRevenue + y2S.totalRevenue + y3S.totalRevenue,
+      operatingRevenue: y1S.operatingRevenue + y2S.operatingRevenue + y3S.operatingRevenue,
       totalMgmtFees: y1S.totalMgmtFee + y2S.totalMgmtFee + y3S.totalMgmtFee,
       totalCarry: y1S.totalCarry + y2S.totalCarry + y3S.totalCarry,
+      ebitda: y1S.ebitda + y2S.ebitda + y3S.ebitda,
       totalExpenses: y1S.totalExpenses + y2S.totalExpenses + y3S.totalExpenses,
       totalLPCapital: y1S.totalLPCapital + y2S.totalLPCapital + y3S.totalLPCapital,
       totalFounderFunding: y1S.founderFunding + y2S.founderFunding + y3S.founderFunding,
