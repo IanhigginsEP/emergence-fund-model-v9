@@ -1,7 +1,7 @@
 # PROGRESS: LP-Ready Enhancement Batches
 
 **Last Updated**: January 20, 2026  
-**Status**: BATCH 2 COMPLETE
+**Status**: BATCH 3 IN PROGRESS
 
 ## Repository
 https://github.com/IanhigginsEP/emergence-fund-model-v9
@@ -17,7 +17,7 @@ https://ianhigginsep.github.io/emergence-fund-model-v9/
 |-------|-------------|--------|----------|
 | 1 | Analysis & Research | ✅ COMPLETE | 30 min |
 | 2 | J-Curve + Waterfall Charts | ✅ COMPLETE | 30 min |
-| 3 | Return Metrics (IRR, MOIC, TVPI, DPI) | ⏳ PENDING | 20 min |
+| 3 | Return Metrics (IRR, MOIC, TVPI, DPI) | 🟡 IN PROGRESS | 20 min |
 | 4 | Enhanced Scenario Analysis | ⏳ PENDING | 25 min |
 | 5 | LP-Ready Polish | ⏳ PENDING | 20 min |
 
@@ -51,45 +51,49 @@ https://ianhigginsep.github.io/emergence-fund-model-v9/
 ### Features Implemented
 - **J-Curve Chart**
   - Cumulative net cash flow visualization
-  - Trough marker with value
-  - Breakeven vertical line
+  - Trough marker at M14: -$236K
+  - Breakeven vertical line at M5
   - Gradient fill (red→yellow→green)
-  - Summary stats: Trough, Breakeven, Final
+  - Final value: $6.47M
 
 - **Revenue Waterfall**
-  - Management Fees bar
-  - Carried Interest bar
-  - BDM Fee Share (deduction)
-  - Net Revenue total
-  - Year selector (36M, Y1, Y2, Y3)
+  - Management Fees: $2.98M
+  - Carried Interest: $5.18M
+  - Net Revenue: $8.08M
 
 - **Expense Waterfall**
-  - Personnel breakdown (Founders, Lewis, EA+Chairman)
-  - Operations breakdown (Compliance, Office, Marketing, Travel)
-  - One-time costs (Setup, Broker Commission)
-  - Category subtotals
+  - Personnel: $912K
+  - Operations: $519K
+  - One-time: $175K
+  - Total: $1.63M
 
-### Integration
-- [x] Updated index.html to load new components
-- [x] Added to Charts tab
+### Verified Deployment
+- [x] All charts rendering correctly
+- [x] Version updated to v9.1 with "LP-READY" badge
 
 ---
 
-## BATCH 3: Return Metrics ⏳
-**Status**: PENDING
+## BATCH 3: Return Metrics 🟡
+**Status**: IN PROGRESS
 
-### Planned Deliverables
-- [ ] `model/metrics.js` - IRR, MOIC, TVPI, DPI calculations
-- [ ] `ui/MetricsPanel.js` - KPI display component
-- [ ] Runway indicator (months of cash)
-- [ ] Add to Dashboard tab
+### Files Added/Modified
+- [x] `model/metrics.js` - IRR, MOIC, TVPI, DPI, Runway calculations
+- [x] `ui/MetricsPanel.js` - Professional KPI display component
+- [ ] Update `index.html` to include metrics panel on Dashboard
 
-### Calculations Needed
-- **IRR**: Internal Rate of Return (Newton-Raphson approximation)
-- **MOIC**: Total Value / Total Invested
-- **TVPI**: (NAV + Distributions) / Paid-In Capital
+### Calculations Implemented
+- **IRR**: Newton-Raphson approximation with monthly cash flows
+- **MOIC**: (NAV + Distributions) / Total Invested
+- **TVPI**: Total Value to Paid-In (same as MOIC at fund level)
 - **DPI**: Distributions / Paid-In Capital
-- **Runway**: Cash / Monthly Burn Rate
+- **RVPI**: Residual Value / Paid-In
+- **Runway**: Cash / Average Burn Rate (3-month rolling)
+
+### UI Features
+- Gradient-styled metric cards
+- Color-coded thresholds (green/yellow/red)
+- Progress bar for runway
+- LP benchmark context note
 
 ---
 
@@ -124,6 +128,8 @@ https://ianhigginsep.github.io/emergence-fund-model-v9/
 | Total Revenue (3Y) | $8.08M | ✅ Verified |
 | Total Carry (3Y) | $5.10M | ✅ Verified |
 | Founder Funding | $182K | ✅ Verified |
+| J-Curve Trough | -$236K (M14) | ✅ Verified |
+| J-Curve Final | $6.47M | ✅ Verified |
 
 ---
 
@@ -138,6 +144,7 @@ https://ianhigginsep.github.io/emergence-fund-model-v9/
 
 ## NEXT STEPS
 
-1. Verify Batch 2 deployed correctly at live site
-2. Proceed to Batch 3: Return Metrics
-3. Update this file after each batch completion
+1. ✅ Deploy metrics.js and MetricsPanel.js
+2. Update index.html to include MetricsPanel on Dashboard
+3. Verify metrics calculations
+4. Proceed to Batch 4: Enhanced Scenario Analysis
