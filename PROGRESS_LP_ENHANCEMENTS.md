@@ -1,7 +1,7 @@
 # PROGRESS: LP-Ready Enhancement Batches
 
-**Last Updated**: January 20, 2026 - 10:15 AM  
-**Status**: BATCH 3 COMPLETE
+**Last Updated**: January 20, 2026 - 11:00 AM  
+**Status**: BATCHES 1-3 COMPLETE — READY FOR BATCH 4
 
 ## Repository
 https://github.com/IanhigginsEP/emergence-fund-model-v9
@@ -11,15 +11,26 @@ https://ianhigginsep.github.io/emergence-fund-model-v9/
 
 ---
 
+## CURRENT STATE (Verified Jan 20, 2026)
+
+v9.2 LP-READY is deployed and working:
+- ✅ LP Return Metrics panel (IRR 12.2%, MOIC 1.18x, TVPI 1.18x, DPI 0.06x)
+- ✅ J-Curve chart (Trough M14: -$236K, Final: $6.47M)
+- ✅ Revenue Waterfall ($2.98M + $5.18M = $8.08M)
+- ✅ Expense Waterfall ($912K + $519K + $175K = $1.63M)
+- ✅ Validation targets met: M5 breakeven, $182K founder funding, $140.58M Y3 AUM
+
+---
+
 ## BATCH OVERVIEW
 
-| Batch | Description | Status | Est. Time |
-|-------|-------------|--------|----------|
-| 1 | Analysis & Research | ✅ COMPLETE | 30 min |
-| 2 | J-Curve + Waterfall Charts | ✅ COMPLETE | 30 min |
-| 3 | Return Metrics (IRR, MOIC, TVPI, DPI) | ✅ COMPLETE | 20 min |
-| 4 | Enhanced Scenario Analysis | ⏳ PENDING | 25 min |
-| 5 | LP-Ready Polish | ⏳ PENDING | 20 min |
+| Batch | Description | Status |
+|-------|-------------|--------|
+| 1 | Analysis & Research | ✅ COMPLETE |
+| 2 | J-Curve + Waterfall Charts | ✅ COMPLETE |
+| 3 | Return Metrics (IRR, MOIC, TVPI, DPI) | ✅ COMPLETE |
+| 4 | Enhanced Scenario Analysis | ⏳ **NEXT** |
+| 5 | LP-Ready Polish | ⏳ PENDING |
 
 ---
 
@@ -32,12 +43,6 @@ https://ianhigginsep.github.io/emergence-fund-model-v9/
 - [x] Identified missing industry-standard features
 - [x] Created prioritized implementation roadmap
 
-### Key Findings
-- LPs expect: IRR, MOIC, TVPI, DPI metrics
-- J-curve visualization is standard for PE/VC
-- Waterfall charts essential for financial storytelling
-- Emerging managers target HNW individuals and family offices
-
 ---
 
 ## BATCH 2: J-Curve + Waterfall Charts ✅
@@ -48,93 +53,60 @@ https://ianhigginsep.github.io/emergence-fund-model-v9/
 - [x] `ui/RevenueWaterfall.js` - Mgmt Fees + Carry → Total Revenue
 - [x] `ui/ExpenseWaterfall.js` - Salaries + OpEx → Total Expenses
 
-### Features Implemented
-- **J-Curve Chart**
-  - Cumulative net cash flow visualization
-  - Trough marker at M14: -$236K
-  - Breakeven vertical line at M5
-  - Gradient fill (red→yellow→green)
-  - Final value: $6.47M
-
-- **Revenue Waterfall**
-  - Management Fees: $2.98M
-  - Carried Interest: $5.18M
-  - Net Revenue: $8.08M
-
-- **Expense Waterfall**
-  - Personnel: $912K
-  - Operations: $519K
-  - One-time: $175K
-  - Total: $1.63M
-
-### Verified Deployment
-- [x] All charts rendering correctly
-- [x] Version updated to v9.1 with "LP-READY" badge
+### Features Verified
+- J-Curve: Trough at M14 (-$236K), Breakeven M5, Final $6.47M
+- Revenue: $2.98M + $5.18M = $8.08M
+- Expenses: $912K + $519K + $175K = $1.63M
 
 ---
 
 ## BATCH 3: Return Metrics ✅
 **Completed**: January 20, 2026
 
-### Files Added/Modified
+### Files Added
 - [x] `model/metrics.js` - IRR, MOIC, TVPI, DPI, Runway calculations
 - [x] `ui/MetricsPanel.js` - Professional KPI display component
-- [x] `index.html` - Updated to v9.2, added metrics to Dashboard
 
-### Calculations Implemented
-- **IRR**: Newton-Raphson approximation with monthly cash flows
-- **MOIC**: (NAV + Distributions) / Total Invested
-- **TVPI**: Total Value to Paid-In (same as MOIC at fund level)
-- **DPI**: Distributions / Paid-In Capital
-- **RVPI**: Residual Value / Paid-In
-- **Runway**: Cash / Average Burn Rate (3-month rolling)
-
-### UI Features
-- Gradient-styled metric cards (IRR, MOIC, TVPI, DPI)
-- Color-coded thresholds (green/yellow/red based on benchmarks)
-- Progress bar for runway visualization
-- Secondary metrics row (Runway, Breakeven, RVPI)
-- Summary stats (Total Invested, Distributions, NAV, Cash)
-- LP benchmark context note
-
-### Integration
-- MetricsPanel appears at TOP of Dashboard tab
-- Loads before existing Dashboard component
-- Updates dynamically with scenario changes
+### Metrics Verified
+- IRR: 12.2%
+- MOIC: 1.18x
+- TVPI: 1.18x
+- DPI: 0.06x
+- RVPI: 1.12x
+- Runway: ∞ (fully funded after breakeven)
 
 ---
 
-## BATCH 4: Enhanced Scenario Analysis ⏳
-**Status**: PENDING
+## BATCH 4: Enhanced Scenario Analysis ⏳ **NEXT**
+**Status**: READY TO EXECUTE
 
 ### Planned Deliverables
-- [ ] 3x3 stress test matrix (Return × Capital scenarios)
-- [ ] Interactive sensitivity sliders
-- [ ] Milestone markers on existing charts
-- [ ] Breakeven sensitivity analysis
+1. **3x3 Stress Test Matrix** - Return (0%/7%/14%) × Capital (50%/100%/150%)
+2. **Interactive Sensitivity Sliders** - Real-time parameter adjustment
+3. **Milestone Markers on Charts** - Fund launch, breakeven, year markers
+4. **Breakeven Sensitivity** - Show range across scenarios
 
 ### Implementation Plan
-1. Create `ui/StressTestMatrix.js` - 3x3 grid showing key metrics across scenarios
-2. Create `ui/SensitivitySliders.js` - Real-time parameter adjustment
-3. Add milestone markers to J-Curve chart (Series A, B targets)
-4. Breakeven sensitivity: show range across scenarios
+- Create `ui/StressTestMatrix.js` (~80 lines)
+- Create `ui/SensitivitySliders.js` (~100 lines)
+- Enhance existing charts with milestone markers
+- Add to index.html script loads
+
+### Validation After Batch 4
+- All scenarios should display correct metrics
+- Sliders should update model in real-time
+- Matrix should show 9 combinations
 
 ---
 
-## BATCH 5: LP-Ready Polish ⏳
-**Status**: PENDING
+## BATCH 5: LP-Ready Polish ⏳ PENDING
+**Status**: After Batch 4
 
 ### Planned Deliverables
-- [ ] Print/PDF export view improvements
+- [ ] Enhanced Print/PDF export view
 - [ ] LP View toggle (simplified external view)
 - [ ] Share class revenue breakdown
 - [ ] Formatting consistency cleanup
-
-### Implementation Plan
-1. Enhance PrintView.js with LP-focused summary
-2. Add "LP View" toggle to header
-3. Create share class breakdown in Revenue Waterfall
-4. Audit all number formatting for consistency
 
 ---
 
@@ -149,8 +121,8 @@ https://ianhigginsep.github.io/emergence-fund-model-v9/
 | Founder Funding | $182K | ✅ Verified |
 | J-Curve Trough | -$236K (M14) | ✅ Verified |
 | J-Curve Final | $6.47M | ✅ Verified |
-| IRR | Calculating... | 🟡 To verify |
-| MOIC | Calculating... | 🟡 To verify |
+| IRR | 12.2% | ✅ Verified |
+| MOIC | 1.18x | ✅ Verified |
 
 ---
 
@@ -173,9 +145,8 @@ https://ianhigginsep.github.io/emergence-fund-model-v9/
 
 ---
 
-## NEXT STEPS
+## NOTES
 
-1. ✅ Verify v9.2 deployment with MetricsPanel on Dashboard
-2. Verify metrics calculations are correct
-3. Proceed to Batch 4: Enhanced Scenario Analysis
-4. Continue updating this file after each batch
+**Jan 20 Clarification**: The CFO/COO analysis chat rediscovered the same gaps that were already fixed in Batches 2-3. This was redundant. All LP Enhancement work through Batch 3 is confirmed complete and deployed.
+
+**Next Step**: Execute Batch 4 (Enhanced Scenario Analysis)
