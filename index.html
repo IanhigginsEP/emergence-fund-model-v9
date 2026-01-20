@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Emergence Partners Fund P&L Model v9.3</title>
+  <title>Emergence Partners Fund P&L Model v9.4</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js"></script>
@@ -12,6 +12,10 @@
     @media print { .no-print { display: none !important; } }
     .collapsible { max-height: 0; overflow: hidden; transition: max-height 0.3s ease-out; }
     .collapsible.open { max-height: 2000px; }
+    /* Frozen column A and row 1 */
+    .sticky-col { position: sticky; left: 0; z-index: 10; }
+    .sticky-row { position: sticky; top: 0; z-index: 20; }
+    .sticky-corner { position: sticky; left: 0; top: 0; z-index: 30; }
   </style>
 </head>
 <body class="bg-gray-100">
@@ -72,7 +76,7 @@
       
       const model = useMemo(() => {
         const result = FM.runModel(assumptions, capitalInputs, scenario.annualReturn || 1.0, scenario.bdmRevenueShare || 0);
-        const summary = FM.calculateSummaries(result.months);
+        const summary = FM.calculateSummaries(result.months, result.startingCashUSD);
         return { ...result, summary };
       }, [assumptions, capitalInputs, scenario.annualReturn, scenario.bdmRevenueShare]);
       
@@ -100,7 +104,7 @@
             <div className="flex justify-between items-center">
               <div>
                 <h1 className="text-2xl font-bold text-gray-800">
-                  Emergence Partners Fund Model <span className="text-green-600">v9.3</span>
+                  Emergence Partners Fund Model <span className="text-green-600">v9.4</span>
                   <span className="ml-2 text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded">LP-READY</span>
                 </h1>
                 <p className="text-sm text-gray-500">24-Month Projection • Bootstrapped • PPM Compliant</p>

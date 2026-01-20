@@ -1,18 +1,9 @@
 // ui/Dashboard.js - Summary KPI cards and annual table
-// v9.3 Batch 4: Added EBITDA, Shareholder Loan, Below the Line section
+// v9.4: KPIs below cash flow, starting pot display, bracket formatting
 
 window.FundModel = window.FundModel || {};
 
 window.FundModel.Dashboard = function Dashboard({ model, scenarioName, onResetScenario }) {
-  const fmt = window.FundModel.fmt || window.FundModel.formatCurrency || function(v) {
-    if (v == null) return '-';
-    const abs = Math.abs(v), sign = v < 0 ? '-' : '';
-    if (abs >= 1e6) return sign + '$' + (abs / 1e6).toFixed(2) + 'M';
-    if (abs >= 1e3) return sign + '$' + (abs / 1e3).toFixed(0) + 'K';
-    return sign + '$' + abs.toFixed(0);
-  };
-  
-  // Bracket notation for negatives
   const fmtBracket = function(v) {
     if (v == null) return '-';
     const abs = Math.abs(v);
@@ -22,16 +13,16 @@ window.FundModel.Dashboard = function Dashboard({ model, scenarioName, onResetSc
     else formatted = '$' + abs.toFixed(0);
     return v < 0 ? '(' + formatted + ')' : formatted;
   };
+  const fmt = fmtBracket;
   
-  const { summary, breakEvenMonth, cumulativeFounderFunding, months } = model;
+  const { summary, breakEvenMonth, cumulativeFounderFunding, months, startingCashUSD } = model;
   const founderSplit = { total: cumulativeFounderFunding || 0, ian: (cumulativeFounderFunding || 0) / 2, paul: (cumulativeFounderFunding || 0) / 2 };
   const lastMonth = months && months.length > 0 ? months[months.length - 1] : {};
+  const startingPot = startingCashUSD || 367000;
   
-  // Calculate Y1 EBITDA (first 12 months) or available months
   const y1Months = months ? months.filter(m => m.month >= 0 && m.month < 12) : [];
   const y1EBITDA = y1Months.reduce((sum, m) => sum + (m.ebitda || m.ebt || 0), 0);
   
-  // Calculate total carry (below the line)
   const totalCarry = summary?.totals?.totalCarry || 0;
   const unrealizedCarryValue = lastMonth.closingAUM ? lastMonth.closingAUM * 0.175 : 0;
   
@@ -45,7 +36,8 @@ window.FundModel.Dashboard = function Dashboard({ model, scenarioName, onResetSc
       )}
       
       {/* Primary KPIs */}
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-6 gap-4">
+        <KPICard label="Starting Pot" value={fmt(startingPot)} color="blue" border />
         <KPICard label="Y2 Ending AUM" value={fmt(summary?.y2?.endingAUM || lastMonth.closingAUM)} />
         <KPICard label="Breakeven Month" value={breakEvenMonth !== null ? 'Month ' + breakEvenMonth : 'Not Yet'} color={breakEvenMonth !== null ? 'green' : 'red'} />
         <KPICard label="EBITDA (Y1)" value={fmtBracket(y1EBITDA)} color={y1EBITDA >= 0 ? 'green' : 'red'} />
@@ -81,18 +73,18 @@ window.FundModel.Dashboard = function Dashboard({ model, scenarioName, onResetSc
         </div>
       </div>
       
-      {/* KPI Table (if available) */}
-      {window.FundModel.KPITable && <window.FundModel.KPITable model={model} />}
-      
-      {/* Annual Summary */}
+      {/* Annual Summary (Cash Flow Table) - FIRST */}
       <AnnualTable summary={summary} fmt={fmt} fmtBracket={fmtBracket} />
+      
+      {/* KPI Table - BELOW Cash Flow */}
+      {window.FundModel.KPITable && <window.FundModel.KPITable model={model} />}
     </div>
   );
 };
 
 function KPICard({ label, value, color, border }) {
-  const colorClasses = { green: 'text-green-600', red: 'text-red-600', purple: 'text-purple-600', amber: 'text-amber-600', default: 'text-gray-800' };
-  const borderClasses = { purple: 'border-2 border-purple-200', amber: 'border-2 border-amber-200', default: '' };
+  const colorClasses = { green: 'text-green-600', red: 'text-red-600', purple: 'text-purple-600', amber: 'text-amber-600', blue: 'text-blue-600', default: 'text-gray-800' };
+  const borderClasses = { purple: 'border-2 border-purple-200', amber: 'border-2 border-amber-200', blue: 'border-2 border-blue-200', default: '' };
   return (
     <div className={`bg-white rounded-lg shadow p-4 ${border && borderClasses[color] ? borderClasses[color] : ''}`}>
       <p className="text-xs text-gray-500 uppercase">{label}</p>
@@ -116,17 +108,17 @@ function AnnualTable({ summary, fmt, fmtBracket }) {
     <div className="bg-white rounded-lg shadow p-4">
       <h2 className="font-semibold mb-3">Annual Summary</h2>
       <table className="w-full text-sm">
-        <thead><tr className="border-b"><th className="text-left py-2">Metric</th><th className="text-right py-2">Year 1</th><th className="text-right py-2">Year 2</th><th className="text-right py-2 font-bold">Total</th></tr></thead>
+        <thead><tr className="border-b sticky-row"><th className="text-left py-2 sticky-corner bg-white">Metric</th><th className="text-right py-2">Year 1</th><th className="text-right py-2">Year 2</th><th className="text-right py-2 font-bold">Total</th></tr></thead>
         <tbody>
           {rows.map((r, i) => {
             const total = (r.y1 || 0) + (r.y2 || 0);
             const y1Color = r.dynamic ? (r.y1 >= 0 ? 'text-green-600' : 'text-red-600') : (r.color ? `text-${r.color}-600` : '');
             const y2Color = r.dynamic ? (r.y2 >= 0 ? 'text-green-600' : 'text-red-600') : (r.color ? `text-${r.color}-600` : '');
             const bgClass = r.bg ? `bg-${r.bg}-50` : '';
-            const fmtFn = r.negative ? (v) => v ? '(' + fmt(Math.abs(v)) + ')' : '-' : fmtBracket;
+            const fmtFn = fmtBracket;
             return (
               <tr key={i} className={`border-b ${bgClass}`}>
-                <td className={`py-2 ${r.bold ? 'font-semibold' : ''}`}>{r.label}</td>
+                <td className={`py-2 sticky-col bg-white ${r.bold ? 'font-semibold' : ''}`}>{r.label}</td>
                 <td className={`text-right font-mono ${y1Color}`}>{fmtFn(r.y1)}</td>
                 <td className={`text-right font-mono ${y2Color}`}>{fmtFn(r.y2)}</td>
                 <td className={`text-right font-mono font-bold ${r.color ? `text-${r.color}-600` : ''}`}>{r.label === 'Net Cash' || r.label === 'Ending AUM' ? '-' : fmtFn(total)}</td>

@@ -1,18 +1,25 @@
 // model/summaries.js - Calculate annual summaries and utility functions
-// v9.3.1: Fixed field names for carry, added EBITDA and operatingRevenue
+// v9.4: Added startingCashUSD to output, bracket formatting
 
 window.FundModel = window.FundModel || {};
 
-// Alias for formatting - Dashboard.js expects formatCurrency
-window.FundModel.formatCurrency = window.FundModel.fmt || function(v) {
+window.FundModel.formatCurrency = function(v) {
   if (v == null) return '-';
-  const abs = Math.abs(v), sign = v < 0 ? '-' : '';
-  if (abs >= 1e6) return sign + '$' + (abs / 1e6).toFixed(2) + 'M';
-  if (abs >= 1e3) return sign + '$' + (abs / 1e3).toFixed(0) + 'K';
-  return sign + '$' + abs.toFixed(0);
+  const abs = Math.abs(v);
+  let formatted;
+  if (abs >= 1e6) formatted = '$' + (abs / 1e6).toFixed(2) + 'M';
+  else if (abs >= 1e3) formatted = '$' + (abs / 1e3).toFixed(0) + 'K';
+  else formatted = '$' + abs.toFixed(0);
+  return v < 0 ? '(' + formatted + ')' : formatted;
 };
 
-// Calculate 50/50 founder split
+window.FundModel.formatPercent = function(v, decimals) {
+  if (v == null) return '-';
+  decimals = decimals !== undefined ? decimals : 2;
+  const val = (v * 100).toFixed(decimals);
+  return v < 0 ? '(' + Math.abs(val) + '%)' : val + '%';
+};
+
 window.FundModel.calculateFounderSplit = function(totalFunding) {
   totalFunding = totalFunding || 0;
   return {
@@ -22,7 +29,7 @@ window.FundModel.calculateFounderSplit = function(totalFunding) {
   };
 };
 
-window.FundModel.calculateSummaries = function(months) {
+window.FundModel.calculateSummaries = function(months, startingCashUSD) {
   const postLaunch = months.filter(m => !m.isPreLaunch);
   const y1 = postLaunch.slice(0, 12);
   const y2 = postLaunch.slice(12, 24);
@@ -49,6 +56,7 @@ window.FundModel.calculateSummaries = function(months) {
   
   return {
     y1: y1S, y2: y2S, y3: y3S,
+    startingCashUSD: startingCashUSD || 367000,
     totals: {
       totalRevenue: y1S.totalRevenue + y2S.totalRevenue + y3S.totalRevenue,
       operatingRevenue: y1S.operatingRevenue + y2S.operatingRevenue + y3S.operatingRevenue,
