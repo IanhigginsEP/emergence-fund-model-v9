@@ -1,7 +1,7 @@
 # PROGRESS: LP-Ready Enhancement Batches
 
-**Last Updated**: January 20, 2026  
-**Status**: BATCH 3 IN PROGRESS
+**Last Updated**: January 20, 2026 - 10:15 AM  
+**Status**: BATCH 3 COMPLETE
 
 ## Repository
 https://github.com/IanhigginsEP/emergence-fund-model-v9
@@ -17,7 +17,7 @@ https://ianhigginsep.github.io/emergence-fund-model-v9/
 |-------|-------------|--------|----------|
 | 1 | Analysis & Research | ✅ COMPLETE | 30 min |
 | 2 | J-Curve + Waterfall Charts | ✅ COMPLETE | 30 min |
-| 3 | Return Metrics (IRR, MOIC, TVPI, DPI) | 🟡 IN PROGRESS | 20 min |
+| 3 | Return Metrics (IRR, MOIC, TVPI, DPI) | ✅ COMPLETE | 20 min |
 | 4 | Enhanced Scenario Analysis | ⏳ PENDING | 25 min |
 | 5 | LP-Ready Polish | ⏳ PENDING | 20 min |
 
@@ -73,13 +73,13 @@ https://ianhigginsep.github.io/emergence-fund-model-v9/
 
 ---
 
-## BATCH 3: Return Metrics 🟡
-**Status**: IN PROGRESS
+## BATCH 3: Return Metrics ✅
+**Completed**: January 20, 2026
 
 ### Files Added/Modified
 - [x] `model/metrics.js` - IRR, MOIC, TVPI, DPI, Runway calculations
 - [x] `ui/MetricsPanel.js` - Professional KPI display component
-- [ ] Update `index.html` to include metrics panel on Dashboard
+- [x] `index.html` - Updated to v9.2, added metrics to Dashboard
 
 ### Calculations Implemented
 - **IRR**: Newton-Raphson approximation with monthly cash flows
@@ -90,10 +90,17 @@ https://ianhigginsep.github.io/emergence-fund-model-v9/
 - **Runway**: Cash / Average Burn Rate (3-month rolling)
 
 ### UI Features
-- Gradient-styled metric cards
-- Color-coded thresholds (green/yellow/red)
-- Progress bar for runway
+- Gradient-styled metric cards (IRR, MOIC, TVPI, DPI)
+- Color-coded thresholds (green/yellow/red based on benchmarks)
+- Progress bar for runway visualization
+- Secondary metrics row (Runway, Breakeven, RVPI)
+- Summary stats (Total Invested, Distributions, NAV, Cash)
 - LP benchmark context note
+
+### Integration
+- MetricsPanel appears at TOP of Dashboard tab
+- Loads before existing Dashboard component
+- Updates dynamically with scenario changes
 
 ---
 
@@ -106,6 +113,12 @@ https://ianhigginsep.github.io/emergence-fund-model-v9/
 - [ ] Milestone markers on existing charts
 - [ ] Breakeven sensitivity analysis
 
+### Implementation Plan
+1. Create `ui/StressTestMatrix.js` - 3x3 grid showing key metrics across scenarios
+2. Create `ui/SensitivitySliders.js` - Real-time parameter adjustment
+3. Add milestone markers to J-Curve chart (Series A, B targets)
+4. Breakeven sensitivity: show range across scenarios
+
 ---
 
 ## BATCH 5: LP-Ready Polish ⏳
@@ -116,6 +129,12 @@ https://ianhigginsep.github.io/emergence-fund-model-v9/
 - [ ] LP View toggle (simplified external view)
 - [ ] Share class revenue breakdown
 - [ ] Formatting consistency cleanup
+
+### Implementation Plan
+1. Enhance PrintView.js with LP-focused summary
+2. Add "LP View" toggle to header
+3. Create share class breakdown in Revenue Waterfall
+4. Audit all number formatting for consistency
 
 ---
 
@@ -130,6 +149,8 @@ https://ianhigginsep.github.io/emergence-fund-model-v9/
 | Founder Funding | $182K | ✅ Verified |
 | J-Curve Trough | -$236K (M14) | ✅ Verified |
 | J-Curve Final | $6.47M | ✅ Verified |
+| IRR | Calculating... | 🟡 To verify |
+| MOIC | Calculating... | 🟡 To verify |
 
 ---
 
@@ -142,9 +163,19 @@ https://ianhigginsep.github.io/emergence-fund-model-v9/
 
 ---
 
+## VERSION HISTORY
+
+| Version | Date | Changes |
+|---------|------|--------|
+| v9.0 | Jan 19, 2026 | Initial modular architecture |
+| v9.1 | Jan 20, 2026 | J-Curve, Revenue/Expense waterfalls |
+| v9.2 | Jan 20, 2026 | LP metrics (IRR, MOIC, TVPI, DPI) |
+
+---
+
 ## NEXT STEPS
 
-1. ✅ Deploy metrics.js and MetricsPanel.js
-2. Update index.html to include MetricsPanel on Dashboard
-3. Verify metrics calculations
-4. Proceed to Batch 4: Enhanced Scenario Analysis
+1. ✅ Verify v9.2 deployment with MetricsPanel on Dashboard
+2. Verify metrics calculations are correct
+3. Proceed to Batch 4: Enhanced Scenario Analysis
+4. Continue updating this file after each batch
