@@ -40,6 +40,10 @@ window.FundModel.PERSONNEL = {
     monthlySalary: 2300,
     startMonth: -6,
   },
+  chairman: {
+    quarterlyAmount: 5000,
+    startMonth: 4,
+  },
 };
 
 window.FundModel.OPEX = {
@@ -60,6 +64,16 @@ window.FundModel.OPEX = {
     budgetPreBE: 6000,
     inverse: true,
   },
+  setupCost: 10000,
+};
+
+window.FundModel.FUND_ECONOMICS = {
+  mgmtFeeAnnual: 0.015,
+  carryRate: 0.175,
+  hurdleRate: 0.06,
+  annualReturn: 0.14,
+  publicWeight: 0.6,
+  gpCommitmentRate: 0.02,
 };
 
 window.FundModel.REVENUE = {
@@ -72,12 +86,23 @@ window.FundModel.REVENUE = {
 window.FundModel.SHAREHOLDER_LOAN = {
   initialItems: [
     { description: 'Pre-model setup costs', amount: 50000 },
-    { description: 'Ian foregone salary (accrued)', amount: 0 },
+    { description: 'PPM legal/drafting', amount: 15000 },
+    { description: 'Historical travel', amount: 6000 },
+    { description: 'Historical salaries (Adrian)', amount: 8000 },
+    { description: 'US Feeder Fund', amount: 30000 },
+    { description: 'Ians personal costs', amount: 100000 },
   ],
+};
+
+window.FundModel.STONE_PARK = {
+  totalEUR: 550000,
+  founderSharePct: 0.6667,
+  availableBalanceEUR: 50000,
 };
 
 window.FundModel.CAPITAL = {
   gpOrganic: { m0to11: 2500000, m12to23: 2500000 },
+  bdm: { startMonth: 7, monthly: 500000 },
   brokerRaise: { startMonth: 3, monthly: 250000, commissionRate: 0.01 },
 };
 
@@ -86,25 +111,59 @@ window.FundModel.DOWNSIDE = {
   capitalMultiplier: 0.5,
 };
 
-// Legacy compatibility - map to new structure
+// Legacy compatibility - FULL mapping to engine expectations
 window.FundModel.DEFAULT_FX_RATES = window.FundModel.FX;
 window.FundModel.DEFAULT_ASSUMPTIONS = {
+  // Timeline
   projectionMonths: window.FundModel.TIMELINE.projectionMonths,
   preLaunchMonths: window.FundModel.TIMELINE.preLaunchMonths,
+  
+  // FX Rates
   fxRates: { ...window.FundModel.FX },
-  mgmtFeeAnnual: window.FundModel.REVENUE.mgmtFeeRate,
-  carryRatePrivate: window.FundModel.REVENUE.carryRate,
-  carryRatePublic: window.FundModel.REVENUE.carryRate,
-  annualReturn: 0.14,
+  
+  // Fund Economics
+  mgmtFeeAnnual: window.FundModel.FUND_ECONOMICS.mgmtFeeAnnual,
+  carryRatePrivate: window.FundModel.FUND_ECONOMICS.carryRate,
+  carryRatePublic: window.FundModel.FUND_ECONOMICS.carryRate,
+  annualReturn: window.FundModel.FUND_ECONOMICS.annualReturn,
+  publicWeight: window.FundModel.FUND_ECONOMICS.publicWeight,
+  gpCommitmentRate: window.FundModel.FUND_ECONOMICS.gpCommitmentRate,
+  
+  // Stone Park
+  stonePark: {
+    totalEUR: window.FundModel.STONE_PARK.totalEUR,
+    founderSharePct: window.FundModel.STONE_PARK.founderSharePct,
+    availableBalanceEUR: window.FundModel.STONE_PARK.availableBalanceEUR,
+  },
+  
+  // Ian & Paul Salaries
   ianSalaryPre: window.FundModel.PERSONNEL.ian.preBESalary,
   ianSalaryPost: window.FundModel.PERSONNEL.ian.postBESalary,
   paulSalaryPre: window.FundModel.PERSONNEL.paul.preBESalary,
   paulSalaryPost: window.FundModel.PERSONNEL.paul.postBESalary,
+  
+  // Lewis
   lewisSalary: window.FundModel.PERSONNEL.lewis.monthlySalary,
   lewisStartMonth: window.FundModel.PERSONNEL.lewis.startMonth,
   lewisMonths: window.FundModel.PERSONNEL.lewis.durationMonths,
+  
+  // EA (Emma)
   eaSalaryGBP: window.FundModel.PERSONNEL.emma.monthlySalary,
   eaStartMonth: window.FundModel.PERSONNEL.emma.startMonth,
+  
+  // Chairman
+  chairmanSalary: window.FundModel.PERSONNEL.chairman.quarterlyAmount,
+  chairmanStartMonth: window.FundModel.PERSONNEL.chairman.startMonth,
+  
+  // OpEx - Direct values for engine
+  officeIT: window.FundModel.OPEX.office + window.FundModel.OPEX.tech + window.FundModel.OPEX.mobile,
+  marketing: window.FundModel.OPEX.marketing.preBE,
+  marketingStopsAtBreakeven: false,
+  travel: window.FundModel.OPEX.travel.preBE,
+  compliance: window.FundModel.OPEX.leventus + window.FundModel.OPEX.adminCustodial,
+  setupCost: window.FundModel.OPEX.setupCost,
+  
+  // Broker
   brokerStartMonth: window.FundModel.CAPITAL.brokerRaise.startMonth,
   brokerCommissionRate: window.FundModel.CAPITAL.brokerRaise.commissionRate,
 };
