@@ -1,7 +1,7 @@
 # PROGRESS: LP-Ready Enhancement Batches
 
-**Last Updated**: January 20, 2026 - 5:00 PM  
-**Status**: v9.3 BATCH 3 COMPLETE
+**Last Updated**: January 20, 2026 - 6:00 PM  
+**Status**: v9.3 BATCH 4 COMPLETE
 
 ## Repository
 https://github.com/IanhigginsEP/emergence-fund-model-v9
@@ -18,8 +18,8 @@ https://ianhigginsep.github.io/emergence-fund-model-v9/
 | 1 | Config & Timeline (24mo, new expenses) | ✅ COMPLETE |
 | 2 | Model Engine (carry below line, EBITDA) | ✅ COMPLETE |
 | 3 | KPI Table (Revenue/AUM, EBITDA/AUM) | ✅ COMPLETE |
-| 4 | Dashboard & Cash Flow UI | ⏳ NEXT |
-| 5 | Validation & README | ⏳ PENDING |
+| 4 | Dashboard & Cash Flow UI | ✅ COMPLETE |
+| 5 | Validation & README | ⏳ NEXT |
 
 ### v9.3 Key Changes
 - 24-month horizon (from 36)
@@ -29,6 +29,36 @@ https://ianhigginsep.github.io/emergence-fund-model-v9/
 - Ian salary as roll-up/liability (not cash outflow)
 - Marketing/Travel budgets: $6K pre-breakeven total, inverse spend pattern
 - Target breakeven: Month 7
+
+---
+
+## BATCH 4 DELIVERABLES ✅
+**Completed**: January 20, 2026 - 6:00 PM
+
+### Files Modified
+- [x] `ui/Dashboard.js` - Major UI updates for v9.3
+- [x] `ui/Tables.js` - Cash flow statement updates
+
+### Dashboard Changes
+- [x] EBITDA (Y1) KPI card added
+- [x] Shareholder Loan balance KPI card added
+- [x] "Below the Line" section with:
+  - Total Carry (24M)
+  - Unrealized Carry Value (17.5% of ending AUM)
+  - Ian Accrued Salary (in shareholder loan)
+- [x] KPITable component integrated (if available)
+- [x] Annual table updated with EBITDA row and bracket notation
+- [x] Updated for 24-month horizon (Y1/Y2 instead of Y1/Y2/Y3)
+
+### Tables.js (CashFlow) Changes
+- [x] Bracket notation for negative numbers: (50,000) not -$50K
+- [x] "Operating Revenue (Mgmt Fees)" label (was "Total Revenue")
+- [x] EBITDA row added with blue background
+- [x] "Below the Line" section header in purple
+- [x] Carried Interest row in Below the Line section
+- [x] Ian Salary Accrual row added
+- [x] Shareholder Loan Balance row with amber highlight
+- [x] Fallback fields for legacy compatibility (operatingRevenue → mgmtFee, ebitda → ebt)
 
 ---
 
@@ -124,36 +154,6 @@ v9.2 LP-READY was deployed and working:
 
 ---
 
-## BATCH 1: Analysis & Research ✅
-**Completed**: January 20, 2026
-
-### Deliverables
-- [x] Reviewed current v9 model across all tabs
-- [x] Conducted web research on LP expectations
-- [x] Identified missing industry-standard features
-- [x] Created prioritized implementation roadmap
-
----
-
-## BATCH 2 (OLD): J-Curve + Waterfall Charts ✅
-**Completed**: January 20, 2026
-
-### Files Added
-- [x] `ui/JCurve.js` - Classic PE/VC J-curve (cumulative net cash flow)
-- [x] `ui/RevenueWaterfall.js` - Mgmt Fees + Carry → Total Revenue
-- [x] `ui/ExpenseWaterfall.js` - Salaries + OpEx → Total Expenses
-
----
-
-## BATCH 3 (OLD): Return Metrics ✅
-**Completed**: January 20, 2026
-
-### Files Added
-- [x] `model/metrics.js` - IRR, MOIC, TVPI, DPI, Runway calculations
-- [x] `ui/MetricsPanel.js` - Professional KPI display component
-
----
-
 ## VALIDATION TARGETS (v9.3 - TO BE VERIFIED)
 
 | Metric | v9.2 Value | v9.3 Expected | Status |
@@ -162,8 +162,8 @@ v9.2 LP-READY was deployed and working:
 | Breakeven | Month 5 | Month 7 | ⏳ Pending |
 | Personnel Cost | ~$19K/mo | ~$12K/mo (base) | ⏳ Pending |
 | OpEx | ~$13K/mo | ~$9.4K/mo | ⏳ Pending |
-| Carry in Cash | Included | Below line | ✅ Engine |
-| Ian Salary | Cash expense | Shareholder loan | ✅ Engine |
+| Carry in Cash | Included | Below line | ✅ UI |
+| Ian Salary | Cash expense | Shareholder loan | ✅ UI |
 
 ---
 
@@ -183,25 +183,26 @@ v9.2 LP-READY was deployed and working:
 | v9.0 | Jan 19, 2026 | Initial modular architecture |
 | v9.1 | Jan 20, 2026 | J-Curve, Revenue/Expense waterfalls |
 | v9.2 | Jan 20, 2026 | LP metrics (IRR, MOIC, TVPI, DPI) |
-| v9.3 | Jan 20, 2026 | 24mo horizon, new personnel/opex, carry below line, KPI table |
+| v9.3 | Jan 20, 2026 | 24mo horizon, new personnel/opex, carry below line, KPI table, UI updates |
 
 ---
 
-## NEXT STEPS (Batch 4)
+## NEXT STEPS (Batch 5)
 
-1. Update Dashboard to show EBITDA-based metrics
-2. Add shareholder loan balance display
-3. Update Cash Flow statement for v9.3 changes
-4. Ensure all components work with 24-month data
+1. Update README with v9.3 changes
+2. Validate all metrics against expectations
+3. Test all tabs and components
+4. Create final changelog entry
 
 ---
 
 ## NOTES
 
-**Jan 20 5:00 PM**: Batch 3 complete. KPITable component:
-- Shows Rolling AUM, New AUM, Redemptions
-- Calculates annualized Revenue/AUM Yield
-- Calculates annualized EBITDA/AUM Efficiency
-- Works with both v9.3 (operatingRevenue/ebitda) and legacy (totalRevenue/ebt) fields
-- New KPIs tab added to navigation
-- Version bumped to v9.3 in header
+**Jan 20 6:00 PM**: Batch 4 complete. UI updates:
+- Dashboard now shows EBITDA (Y1) and Shareholder Loan KPIs
+- "Below the Line" section displays carry and Ian accruals separately
+- KPITable component integrated into Dashboard
+- Cash flow statement uses bracket notation (50,000) for negatives
+- EBITDA row prominent with blue background
+- Shareholder Loan Balance tracked in cash flow
+- All fallback fields added for legacy compatibility

@@ -1,12 +1,12 @@
 // ui/Tables.js - Monthly P&L and Cashflow tables
-// v7: Added cashflow statement with founder funding
-// v8.4: Converted to window.FundModel namespace
+// v9.3 Batch 4: EBITDA row, Below the Line section, bracket notation, shareholder loan
 
 window.FundModel = window.FundModel || {};
 
 window.FundModel.MonthlyPL = function MonthlyPL({ model }) {
   const { formatCurrency } = window.FundModel;
   const fmt = formatCurrency;
+  const fmtNeg = (v) => v < 0 ? '(' + fmt(Math.abs(v)) + ')' : fmt(v);
   const { months } = model;
   
   return (
@@ -21,12 +21,12 @@ window.FundModel.MonthlyPL = function MonthlyPL({ model }) {
         </thead>
         <tbody>
           <TableRow label="Closing AUM" months={months} field="closingAUM" fmt={fmt} bold />
-          <TableRow label="Mgmt Fee" months={months} field="mgmtFee" fmt={fmt} color="green" bg="green" />
+          <TableRow label="Operating Revenue" months={months} field="operatingRevenue" fmt={fmt} color="green" bg="green" fallback="mgmtFee" />
           <TableRow label="BDM Share" months={months} field="bdmFeeShare" fmt={fmt} color="orange" />
-          <TableRow label="Carry" months={months} field="totalCarry" fmt={fmt} color="purple" bg="purple" />
-          <TableRow label="Total Revenue" months={months} field="totalRevenue" fmt={fmt} color="green" bold />
-          <TableRow label="Expenses" months={months} field="totalExpenses" fmt={fmt} color="red" negative />
-          <TableRow label="EBT" months={months} field="ebt" fmt={fmt} dynamic bg="yellow" bold />
+          <TableRow label="Expenses" months={months} field="totalCashExpenses" fmt={fmt} color="red" bracket fallback="totalExpenses" />
+          <TableRow label="EBITDA" months={months} field="ebitda" fmt={fmt} dynamic bg="blue" bold fallback="ebt" />
+          <tr className="bg-purple-100"><td colSpan={months.length+1} className="py-2 px-2 font-semibold text-purple-800">Below the Line</td></tr>
+          <TableRow label="Carried Interest" months={months} field="carryRevenue" fmt={fmt} color="purple" bg="purple" fallback="totalCarry" />
         </tbody>
       </table>
     </div>
@@ -36,6 +36,7 @@ window.FundModel.MonthlyPL = function MonthlyPL({ model }) {
 window.FundModel.CashflowStatement = function CashflowStatement({ model }) {
   const { formatCurrency } = window.FundModel;
   const fmt = formatCurrency;
+  const fmtNeg = (v) => v < 0 ? '(' + fmt(Math.abs(v)) + ')' : fmt(v);
   const { months } = model;
   
   return (
@@ -49,15 +50,22 @@ window.FundModel.CashflowStatement = function CashflowStatement({ model }) {
           </tr>
         </thead>
         <tbody>
-          <TableRow label="Revenue" months={months} field="totalRevenue" fmt={fmt} color="green" />
-          <TableRow label="Expenses" months={months} field="totalExpenses" fmt={fmt} color="red" negative />
+          <TableRow label="Operating Revenue (Mgmt Fees)" months={months} field="operatingRevenue" fmt={fmt} color="green" fallback="mgmtFee" />
+          <TableRow label="Cash Expenses" months={months} field="totalCashExpenses" fmt={fmt} color="red" bracket fallback="totalExpenses" />
+          <TableRow label="EBITDA" months={months} field="ebitda" fmt={fmt} dynamic bg="blue" bold fallback="ebt" />
           <TableRow label="Net Cash Flow" months={months} field="netCashFlow" fmt={fmt} dynamic bold />
           <TableRow label="Founder Funding Req" months={months} field="founderFundingRequired" fmt={fmt} color="amber" bg="amber" />
           <TableRow label="Cumulative Funding" months={months} field="cumulativeFounderFunding" fmt={fmt} color="amber" bold />
           <TableRow label="Cash Balance" months={months} field="closingCash" fmt={fmt} dynamic bg="gray" bold />
+          
+          {/* Below the Line Section */}
+          <tr className="bg-purple-100"><td colSpan={months.length+1} className="py-2 px-2 font-semibold text-purple-800">Below the Line (Excluded from Cash Flow)</td></tr>
+          <TableRow label="Carried Interest" months={months} field="carryRevenue" fmt={fmt} color="purple" bg="purple" fallback="totalCarry" />
+          <TableRow label="Ian Salary Accrual" months={months} field="ianAccrual" fmt={fmt} color="purple" />
+          <TableRow label="Shareholder Loan Balance" months={months} field="shareholderLoanBalance" fmt={fmt} color="amber" bg="amber" bold />
         </tbody>
       </table>
-      <p className="text-xs text-gray-500 mt-2">Founder funding split 50/50 between Ian and Paul</p>
+      <p className="text-xs text-gray-500 mt-2">Founder funding split 50/50 between Ian and Paul • Ian salary accrues to shareholder loan</p>
     </div>
   );
 };
@@ -93,17 +101,19 @@ window.FundModel.CapitalTable = function CapitalTable({ capitalInputs }) {
   );
 };
 
-function TableRow({ label, months, field, fmt, color, bg, bold, negative, dynamic }) {
+function TableRow({ label, months, field, fmt, color, bg, bold, bracket, dynamic, fallback }) {
   const bgClass = bg ? `bg-${bg}-50` : '';
   return (
     <tr className={`border-b ${bgClass}`}>
       <td className={`py-1 px-2 sticky left-0 ${bgClass} ${bold ? 'font-semibold' : ''}`}>{label}</td>
       {months.map(m => {
-        let val = m[field] || 0;
+        let val = m[field];
+        if (val === undefined && fallback) val = m[fallback];
+        val = val || 0;
         let colorClass = '';
         if (dynamic) colorClass = val >= 0 ? 'text-green-600' : 'text-red-600';
         else if (color) colorClass = `text-${color}-600`;
-        const display = negative ? `(${fmt(Math.abs(val))})` : fmt(val);
+        const display = bracket || val < 0 ? (val < 0 ? '(' + fmt(Math.abs(val)) + ')' : fmt(val)) : fmt(val);
         return <td key={m.month} className={`py-1 px-1 text-right font-mono ${colorClass}`}>{val !== 0 ? display : '-'}</td>;
       })}
     </tr>
