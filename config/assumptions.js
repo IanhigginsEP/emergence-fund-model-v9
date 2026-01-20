@@ -1,61 +1,110 @@
 // config/assumptions.js - All editable model inputs
-// v8.2: Converted to window globals for GitHub Pages compatibility
+// v9.3: Major update - 24mo horizon, new personnel/opex, carry below line
 
 window.FundModel = window.FundModel || {};
 
-window.FundModel.DEFAULT_FX_RATES = {
+window.FundModel.TIMELINE = {
+  launchDate: '2026-02-23',
+  projectionMonths: 24,
+  preLaunchMonths: 11,
+  rollingBalanceMonths: 18,
+  targetBreakevenMonth: 7,
+};
+
+window.FundModel.FX = {
   gbpToUsd: 1.27,
   eurToUsd: 1.08,
 };
 
-window.FundModel.STONE_PARK = {
-  totalEUR: 550000,
-  founderSharePct: 0.6667,
-  availableBalanceEUR: 50000,
-  currency: 'EUR',
+window.FundModel.PERSONNEL = {
+  ian: {
+    preBESalary: 5000,
+    postBESalary: 10000,
+    treatAsRollUp: true,
+  },
+  paul: {
+    preBESalary: 5000,
+    postBESalary: 10000,
+    treatAsRollUp: false,
+  },
+  lewis: {
+    monthlySalary: 8850,
+    startMonth: -5,
+    durationMonths: 12,
+  },
+  emma: {
+    monthlySalary: 1000,
+    startMonth: 0,
+  },
+  adrian: {
+    monthlySalary: 2300,
+    startMonth: -6,
+  },
 };
 
-window.FundModel.DEFAULT_TARGETS = {
-  y1AUM: 30000000,
-  y2AUM: 75000000,
-  y3AUM: 150000000,
-  maxFounderFunding: 600000,
-  targetBreakevenMonth: 9,
+window.FundModel.OPEX = {
+  leventus: 6300,
+  adminCustodial: 1600,
+  office: 760,
+  tech: 500,
+  mobile: 250,
+  marketing: {
+    preBE: 0,
+    postBE: 1000,
+    budgetPreBE: 6000,
+    inverse: true,
+  },
+  travel: {
+    preBE: 500,
+    postBE: 1000,
+    budgetPreBE: 6000,
+    inverse: true,
+  },
 };
 
+window.FundModel.REVENUE = {
+  mgmtFeeRate: 0.015,
+  carryRate: 0.175,
+  carryBelowLine: true,
+  hwm: true,
+};
+
+window.FundModel.SHAREHOLDER_LOAN = {
+  initialItems: [
+    { description: 'Pre-model setup costs', amount: 50000 },
+    { description: 'Ian foregone salary (accrued)', amount: 0 },
+  ],
+};
+
+window.FundModel.CAPITAL = {
+  gpOrganic: { m0to11: 2500000, m12to23: 2500000 },
+  brokerRaise: { startMonth: 3, monthly: 250000, commissionRate: 0.01 },
+};
+
+window.FundModel.DOWNSIDE = {
+  y1AumTarget: 30000000,
+  capitalMultiplier: 0.5,
+};
+
+// Legacy compatibility - map to new structure
+window.FundModel.DEFAULT_FX_RATES = window.FundModel.FX;
 window.FundModel.DEFAULT_ASSUMPTIONS = {
-  projectionMonths: 36,
-  preLaunchMonths: 11,
-  fxRates: { ...window.FundModel.DEFAULT_FX_RATES },
-  stonePark: { ...window.FundModel.STONE_PARK },
-  iansPersonalCosts: 100000,
-  mgmtFeeAnnual: 0.015,
-  carryRatePrivate: 0.175,
-  carryRatePublic: 0.175,
-  hurdleRate: 0.06,
+  projectionMonths: window.FundModel.TIMELINE.projectionMonths,
+  preLaunchMonths: window.FundModel.TIMELINE.preLaunchMonths,
+  fxRates: { ...window.FundModel.FX },
+  mgmtFeeAnnual: window.FundModel.REVENUE.mgmtFeeRate,
+  carryRatePrivate: window.FundModel.REVENUE.carryRate,
+  carryRatePublic: window.FundModel.REVENUE.carryRate,
   annualReturn: 0.14,
-  brokerCommissionRate: 0.01,
-  ianSalaryPre: 5000,
-  ianSalaryPost: 10000,
-  paulSalaryPre: 5000,
-  paulSalaryPost: 10000,
-  lewisSalary: 3000,
-  lewisStartMonth: -5,
-  lewisMonths: 12,
-  eaSalaryGBP: 1000,
-  eaStartMonth: 0,
-  chairmanSalary: 5000,
-  chairmanPrepaid: 7500,
-  chairmanStartMonth: 2,
-  officeIT: 1000,
-  marketing: 1000,
-  marketingStopsAtBreakeven: true,
-  travel: 1250,
-  compliance: 11000,
-  setupCost: 10000,
-  publicWeight: 0.6,
-  gpCommitmentRate: 0.02,
-  bdmStartMonth: 7,
-  brokerStartMonth: 3,
-  targets: { ...window.FundModel.DEFAULT_TARGETS },
+  ianSalaryPre: window.FundModel.PERSONNEL.ian.preBESalary,
+  ianSalaryPost: window.FundModel.PERSONNEL.ian.postBESalary,
+  paulSalaryPre: window.FundModel.PERSONNEL.paul.preBESalary,
+  paulSalaryPost: window.FundModel.PERSONNEL.paul.postBESalary,
+  lewisSalary: window.FundModel.PERSONNEL.lewis.monthlySalary,
+  lewisStartMonth: window.FundModel.PERSONNEL.lewis.startMonth,
+  lewisMonths: window.FundModel.PERSONNEL.lewis.durationMonths,
+  eaSalaryGBP: window.FundModel.PERSONNEL.emma.monthlySalary,
+  eaStartMonth: window.FundModel.PERSONNEL.emma.startMonth,
+  brokerStartMonth: window.FundModel.CAPITAL.brokerRaise.startMonth,
+  brokerCommissionRate: window.FundModel.CAPITAL.brokerRaise.commissionRate,
 };
