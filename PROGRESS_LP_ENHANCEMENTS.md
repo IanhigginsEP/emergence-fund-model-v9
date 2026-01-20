@@ -1,7 +1,7 @@
 # PROGRESS: LP-Ready Enhancement Batches
 
-**Last Updated**: January 20, 2026 - 4:30 PM  
-**Status**: v9.3 BATCH 2 COMPLETE
+**Last Updated**: January 20, 2026 - 5:00 PM  
+**Status**: v9.3 BATCH 3 COMPLETE
 
 ## Repository
 https://github.com/IanhigginsEP/emergence-fund-model-v9
@@ -17,8 +17,8 @@ https://ianhigginsep.github.io/emergence-fund-model-v9/
 |-------|-------------|--------|
 | 1 | Config & Timeline (24mo, new expenses) | ✅ COMPLETE |
 | 2 | Model Engine (carry below line, EBITDA) | ✅ COMPLETE |
-| 3 | KPI Table (Revenue/AUM, EBITDA/AUM) | ⏳ NEXT |
-| 4 | Dashboard & Cash Flow UI | ⏳ PENDING |
+| 3 | KPI Table (Revenue/AUM, EBITDA/AUM) | ✅ COMPLETE |
+| 4 | Dashboard & Cash Flow UI | ⏳ NEXT |
 | 5 | Validation & README | ⏳ PENDING |
 
 ### v9.3 Key Changes
@@ -29,6 +29,32 @@ https://ianhigginsep.github.io/emergence-fund-model-v9/
 - Ian salary as roll-up/liability (not cash outflow)
 - Marketing/Travel budgets: $6K pre-breakeven total, inverse spend pattern
 - Target breakeven: Month 7
+
+---
+
+## BATCH 3 DELIVERABLES ✅
+**Completed**: January 20, 2026 - 5:00 PM
+
+### Files Created
+- [x] `ui/KPITable.js` - KPI metrics table component (~100 lines)
+
+### Files Modified
+- [x] `index.html` - Added KPITable script, new KPIs tab, updated to v9.3
+
+### KPITable Features
+- [x] Rolling AUM Balance (monthly closing AUM)
+- [x] Assumed New AUM (LP capital + GP commitment)
+- [x] Redemptions (monthly outflows)
+- [x] Revenue/AUM Yield (annualized % of operating revenue to AUM)
+- [x] EBITDA/AUM Efficiency (annualized % of EBITDA to AUM)
+- [x] Compatible with both v9.3 (operatingRevenue/ebitda) and legacy (totalRevenue/ebt)
+- [x] Year 1 view (M0-M11)
+
+### index.html Updates
+- [x] Added `<script src="ui/KPITable.js" type="text/babel"></script>`
+- [x] Added new "📈 KPIs" tab in navigation
+- [x] Updated version to v9.3
+- [x] Updated projection text to "24-Month"
 
 ---
 
@@ -157,23 +183,25 @@ v9.2 LP-READY was deployed and working:
 | v9.0 | Jan 19, 2026 | Initial modular architecture |
 | v9.1 | Jan 20, 2026 | J-Curve, Revenue/Expense waterfalls |
 | v9.2 | Jan 20, 2026 | LP metrics (IRR, MOIC, TVPI, DPI) |
-| v9.3 | Jan 20, 2026 | 24mo horizon, new personnel/opex, carry below line |
+| v9.3 | Jan 20, 2026 | 24mo horizon, new personnel/opex, carry below line, KPI table |
 
 ---
 
-## NEXT STEPS (Batch 3)
+## NEXT STEPS (Batch 4)
 
-1. Add KPI Table with Revenue/AUM and EBITDA/AUM metrics
-2. Update Dashboard to display new EBITDA-based metrics
-3. Show shareholder loan balance on relevant views
+1. Update Dashboard to show EBITDA-based metrics
+2. Add shareholder loan balance display
+3. Update Cash Flow statement for v9.3 changes
+4. Ensure all components work with 24-month data
 
 ---
 
 ## NOTES
 
-**Jan 20 4:30 PM**: Batch 2 complete. Model engine now:
-- Separates `operatingRevenue` (mgmt fee) from `carryRevenue`
-- Calculates `ebitda` = operatingRevenue - totalCashExpenses
-- Ian's salary accrues to `shareholderLoanBalance` instead of reducing cash
-- Breakeven uses EBITDA (3 consecutive positive months)
-- All months have new fields: operatingRevenue, carryRevenue, ebitda, netIncome, ianAccrual, shareholderLoanBalance
+**Jan 20 5:00 PM**: Batch 3 complete. KPITable component:
+- Shows Rolling AUM, New AUM, Redemptions
+- Calculates annualized Revenue/AUM Yield
+- Calculates annualized EBITDA/AUM Efficiency
+- Works with both v9.3 (operatingRevenue/ebitda) and legacy (totalRevenue/ebt) fields
+- New KPIs tab added to navigation
+- Version bumped to v9.3 in header

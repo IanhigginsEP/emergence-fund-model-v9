@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Emergence Partners Fund P&L Model v9.2</title>
+  <title>Emergence Partners Fund P&L Model v9.3</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js"></script>
@@ -35,6 +35,7 @@
   <script src="ui/RevenueWaterfall.js" type="text/babel"></script>
   <script src="ui/ExpenseWaterfall.js" type="text/babel"></script>
   <script src="ui/MetricsPanel.js" type="text/babel"></script>
+  <script src="ui/KPITable.js" type="text/babel"></script>
   <script src="ui/Controls.js" type="text/babel"></script>
   <script src="ui/Dashboard.js" type="text/babel"></script>
   <script src="ui/FundingSchedule.js" type="text/babel"></script>
@@ -88,6 +89,7 @@
         { id: 'scenarios', label: '🎯 Scenarios' },
         { id: 'cashflow', label: 'Cash Flow' },
         { id: 'charts', label: '📊 Charts' },
+        { id: 'kpis', label: '📈 KPIs' },
         { id: 'assumptions', label: 'Assumptions' },
         { id: 'recoverables', label: 'Recoverables' },
       ];
@@ -98,10 +100,10 @@
             <div className="flex justify-between items-center">
               <div>
                 <h1 className="text-2xl font-bold text-gray-800">
-                  Emergence Partners Fund Model <span className="text-green-600">v9.2</span>
+                  Emergence Partners Fund Model <span className="text-green-600">v9.3</span>
                   <span className="ml-2 text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded">LP-READY</span>
                 </h1>
-                <p className="text-sm text-gray-500">36-Month Projection • Bootstrapped • PPM Compliant</p>
+                <p className="text-sm text-gray-500">24-Month Projection • Bootstrapped • PPM Compliant</p>
               </div>
               <div className="text-right">
                 <p className="text-xs text-gray-500 uppercase">Active Scenario</p>
@@ -150,7 +152,7 @@
           {tab === 'charts' && (
             <div className="space-y-4">
               <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg p-3 mb-4">
-                <p className="text-sm text-gray-600">📈 <strong>LP-Ready Visualizations</strong> — J-Curve, Revenue & Expense waterfalls added in v9.1</p>
+                <p className="text-sm text-gray-600">📈 <strong>LP-Ready Visualizations</strong> — J-Curve, Revenue & Expense waterfalls</p>
               </div>
               {FM.JCurveChart && <FM.JCurveChart model={model} />}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -161,6 +163,15 @@
               {FM.CashChart && <FM.CashChart model={model} />}
               {FM.FounderFundingChart && <FM.FounderFundingChart model={model} />}
               {FM.Waterfall && <FM.Waterfall model={model} />}
+            </div>
+          )}
+          
+          {tab === 'kpis' && (
+            <div className="space-y-4">
+              <div className="bg-gradient-to-r from-purple-50 to-indigo-50 rounded-lg p-3 mb-4">
+                <p className="text-sm text-gray-600">📊 <strong>KPI Analysis</strong> — Revenue/AUM yield, EBITDA/AUM efficiency metrics</p>
+              </div>
+              {FM.KPITable && <FM.KPITable model={model} />}
             </div>
           )}
           
