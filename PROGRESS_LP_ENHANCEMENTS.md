@@ -1,7 +1,7 @@
 # PROGRESS: LP-Ready Enhancement Batches
 
-**Last Updated**: January 20, 2026 - 3:00 PM  
-**Status**: v9.3 MAJOR UPDATE IN PROGRESS
+**Last Updated**: January 20, 2026 - 4:30 PM  
+**Status**: v9.3 BATCH 2 COMPLETE
 
 ## Repository
 https://github.com/IanhigginsEP/emergence-fund-model-v9
@@ -16,8 +16,8 @@ https://ianhigginsep.github.io/emergence-fund-model-v9/
 | Batch | Description | Status |
 |-------|-------------|--------|
 | 1 | Config & Timeline (24mo, new expenses) | ✅ COMPLETE |
-| 2 | Model Engine (carry below line, EBITDA) | ⏳ NEXT |
-| 3 | KPI Table (Revenue/AUM, EBITDA/AUM) | ⏳ PENDING |
+| 2 | Model Engine (carry below line, EBITDA) | ✅ COMPLETE |
+| 3 | KPI Table (Revenue/AUM, EBITDA/AUM) | ⏳ NEXT |
 | 4 | Dashboard & Cash Flow UI | ⏳ PENDING |
 | 5 | Validation & README | ⏳ PENDING |
 
@@ -30,12 +30,45 @@ https://ianhigginsep.github.io/emergence-fund-model-v9/
 - Marketing/Travel budgets: $6K pre-breakeven total, inverse spend pattern
 - Target breakeven: Month 7
 
-### v9.3 Config Structure
+---
+
+## BATCH 2 DELIVERABLES ✅
+**Completed**: January 20, 2026 - 4:30 PM
+
+### Files Modified
+- [x] `model/engine.js` - Major rewrite for v9.3
+
+### Files Created
+- [x] `model/shareholderLoan.js` - Shareholder loan tracking utilities
+
+### Engine Changes
+- [x] 24-month loop (reads from `TIMELINE.projectionMonths`)
+- [x] Carry excluded from cash flow (`operatingRevenue` vs `carryRevenue`)
+- [x] EBITDA calculation (`operatingRevenue - totalCashExpenses`)
+- [x] Ian salary accrues to Shareholder Loan when `treatAsRollUp: true`
+- [x] Breakeven based on EBITDA (3 consecutive positive months)
+- [x] Added Adrian salary support
+- [x] Month objects include: `operatingRevenue`, `carryRevenue`, `ebitda`, `netIncome`, `ianAccrual`, `shareholderLoanBalance`
+
+### Shareholder Loan Features
+- [x] `getInitialShareholderLoan()` - Get starting balance from config
+- [x] `getShareholderLoanDetails(months)` - Detailed breakdown with accruals
+- [x] `calculateRepaymentCapacity(months, repaymentMonth)` - Repayment analysis
+
+---
+
+## v9.3 Config Structure (Batch 1)
 ```javascript
 window.FundModel.TIMELINE = { projectionMonths: 24, targetBreakevenMonth: 7 }
-window.FundModel.PERSONNEL = { lewis: $8,850, emma: $1,000, adrian: $2,300 }
-window.FundModel.OPEX = { leventus: $6,300, admin: $1,600, office: $760 }
+window.FundModel.PERSONNEL = { 
+  ian: { preBESalary: 5000, postBESalary: 10000, treatAsRollUp: true },
+  lewis: { monthlySalary: 8850 }, 
+  emma: { monthlySalary: 1000 }, 
+  adrian: { monthlySalary: 2300 } 
+}
+window.FundModel.OPEX = { leventus: 6300, adminCustodial: 1600, office: 760, tech: 500, mobile: 250 }
 window.FundModel.REVENUE = { carryBelowLine: true }
+window.FundModel.SHAREHOLDER_LOAN = { initialItems: [...] }
 ```
 
 ---
@@ -76,7 +109,7 @@ v9.2 LP-READY was deployed and working:
 
 ---
 
-## BATCH 2: J-Curve + Waterfall Charts ✅
+## BATCH 2 (OLD): J-Curve + Waterfall Charts ✅
 **Completed**: January 20, 2026
 
 ### Files Added
@@ -86,7 +119,7 @@ v9.2 LP-READY was deployed and working:
 
 ---
 
-## BATCH 3: Return Metrics ✅
+## BATCH 3 (OLD): Return Metrics ✅
 **Completed**: January 20, 2026
 
 ### Files Added
@@ -99,11 +132,12 @@ v9.2 LP-READY was deployed and working:
 
 | Metric | v9.2 Value | v9.3 Expected | Status |
 |--------|-----------|---------------|--------|
-| Horizon | 36 months | 24 months | ✅ Config |
+| Horizon | 36 months | 24 months | ✅ Engine |
 | Breakeven | Month 5 | Month 7 | ⏳ Pending |
 | Personnel Cost | ~$19K/mo | ~$12K/mo (base) | ⏳ Pending |
 | OpEx | ~$13K/mo | ~$9.4K/mo | ⏳ Pending |
-| Carry in Cash | Included | Below line | ⏳ Pending |
+| Carry in Cash | Included | Below line | ✅ Engine |
+| Ian Salary | Cash expense | Shareholder loan | ✅ Engine |
 
 ---
 
@@ -127,6 +161,19 @@ v9.2 LP-READY was deployed and working:
 
 ---
 
+## NEXT STEPS (Batch 3)
+
+1. Add KPI Table with Revenue/AUM and EBITDA/AUM metrics
+2. Update Dashboard to display new EBITDA-based metrics
+3. Show shareholder loan balance on relevant views
+
+---
+
 ## NOTES
 
-**Jan 20 Afternoon**: Starting v9.3 major update per user spec. This supersedes the original Batch 4-5 plan. The v9.3 work is tracked in a separate batch system at the top of this file.
+**Jan 20 4:30 PM**: Batch 2 complete. Model engine now:
+- Separates `operatingRevenue` (mgmt fee) from `carryRevenue`
+- Calculates `ebitda` = operatingRevenue - totalCashExpenses
+- Ian's salary accrues to `shareholderLoanBalance` instead of reducing cash
+- Breakeven uses EBITDA (3 consecutive positive months)
+- All months have new fields: operatingRevenue, carryRevenue, ebitda, netIncome, ianAccrual, shareholderLoanBalance
