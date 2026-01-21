@@ -1,11 +1,36 @@
-// ui/Controls.js - Input controls v10.14
-// Fixed: BDM now has trailing commission fields like Broker
+// ui/Controls.js - Input controls v10.19
+// ADDED: Redemptions schedule editor (Issue #5)
+// UPDATED: BDM/Broker commission labels for clarity (50bps trailing)
 window.FundModel = window.FundModel || {};
 
 window.FundModel.Controls = function Controls({ assumptions, onUpdate }) {
+  const { useState } = React;
   const upd = (k, v) => onUpdate(k, v);
   const monthOptions = [{ value: 'null', label: 'Not Triggered' }];
   for (let i = 0; i <= 35; i++) monthOptions.push({ value: String(i), label: `M${i}` });
+  
+  // State for redemptions editor
+  const [newRedMonth, setNewRedMonth] = useState(25);
+  const [newRedAmount, setNewRedAmount] = useState(2000000);
+  
+  const redemptionSchedule = assumptions.redemptionSchedule || [];
+  
+  const addRedemption = () => {
+    const newSchedule = [...redemptionSchedule, { month: newRedMonth, amount: newRedAmount }]
+      .sort((a, b) => a.month - b.month);
+    upd('redemptionSchedule', newSchedule);
+  };
+  
+  const removeRedemption = (idx) => {
+    const newSchedule = redemptionSchedule.filter((_, i) => i !== idx);
+    upd('redemptionSchedule', newSchedule);
+  };
+  
+  const updateRedemption = (idx, field, value) => {
+    const newSchedule = [...redemptionSchedule];
+    newSchedule[idx] = { ...newSchedule[idx], [field]: value };
+    upd('redemptionSchedule', newSchedule.sort((a, b) => a.month - b.month));
+  };
   
   return (
     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -14,7 +39,7 @@ window.FundModel.Controls = function Controls({ assumptions, onUpdate }) {
         <DateInput label="Fund Launch" value={assumptions.launchDate} onChange={v => upd('launchDate', v)} />
       </Section>
       
-      <Section title="Fees & Returns">
+      <Section title="Fees &amp; Returns">
         <NumInput label="Mgmt Fee (Annual)" value={assumptions.mgmtFeeAnnual * 100} onChange={v => upd('mgmtFeeAnnual', v/100)} suffix="%" step={0.1} />
         <NumInput label="Carry Rate" value={assumptions.carryRatePrivate * 100} onChange={v => { upd('carryRatePrivate', v/100); upd('carryRatePublic', v/100); }} suffix="%" />
         <NumInput label="Annual Return" value={assumptions.annualReturn * 100} onChange={v => upd('annualReturn', v/100)} suffix="%" />
@@ -27,18 +52,18 @@ window.FundModel.Controls = function Controls({ assumptions, onUpdate }) {
         <NumInput label="Ian (Pre-BE)" value={assumptions.ianSalaryPre} onChange={v => upd('ianSalaryPre', v)} suffix="$" step={1000} />
         <NumInput label="Ian (Post-BE)" value={assumptions.ianSalaryPost} onChange={v => upd('ianSalaryPost', v)} suffix="$" step={1000} />
         <div className="border-t mt-2 pt-2">
-          <ToggleInput label="Paul Cash Draw" value={assumptions.paulCashDrawEnabled !== false} onChange={v => upd('paulCashDrawEnabled', v)} help="ON=Cash expense, OFF=Roll-up" />
+          <ToggleInput label="Paul Cash Draw" value={assumptions.paulCashDrawEnabled !== false} onChange={v => upd('paulCashDrawEnabled', v)} help="ON=Cash, OFF=Roll-up" />
         </div>
         <NumInput label="Paul (Pre-BE)" value={assumptions.paulSalaryPre} onChange={v => upd('paulSalaryPre', v)} suffix="$" step={1000} />
         <NumInput label="Paul (Post-BE)" value={assumptions.paulSalaryPost} onChange={v => upd('paulSalaryPost', v)} suffix="$" step={1000} />
       </Section>
       
-      <Section title="Staff Costs (incl. pre-launch)">
+      <Section title="Staff Costs">
         <NumInput label="Lewis" value={assumptions.lewisSalary} onChange={v => upd('lewisSalary', v)} suffix="$" step={500} />
-        <NumInput label="Lewis Months (incl pre-launch)" value={assumptions.lewisMonths} onChange={v => upd('lewisMonths', v)} suffix="M" />
-        <NumInput label="Lewis Start Month" value={assumptions.lewisStartMonth} onChange={v => upd('lewisStartMonth', v)} suffix="M" />
+        <NumInput label="Lewis Months" value={assumptions.lewisMonths} onChange={v => upd('lewisMonths', v)} suffix="M" />
+        <NumInput label="Lewis Start" value={assumptions.lewisStartMonth} onChange={v => upd('lewisStartMonth', v)} suffix="M" />
         <NumInput label="EA" value={assumptions.eaSalary} onChange={v => upd('eaSalary', v)} suffix="$" step={500} />
-        <NumInput label="Chairman (Quarterly)" value={assumptions.chairmanSalary} onChange={v => upd('chairmanSalary', v)} suffix="$" step={500} />
+        <NumInput label="Chairman (Qtr)" value={assumptions.chairmanSalary} onChange={v => upd('chairmanSalary', v)} suffix="$" step={500} />
       </Section>
       
       <Section title="BDM Economics" color="green">
@@ -47,9 +72,8 @@ window.FundModel.Controls = function Controls({ assumptions, onUpdate }) {
           <NumInput label="Start Month" value={assumptions.bdmCapitalStartMonth || 7} onChange={v => upd('bdmCapitalStartMonth', v)} suffix="M" />
           <NumInput label="Monthly Capital" value={assumptions.bdmMonthlyCapital || 500000} onChange={v => upd('bdmMonthlyCapital', v)} suffix="$" step={100000} />
           <NumInput label="Retainer" value={assumptions.bdmRetainer || 0} onChange={v => upd('bdmRetainer', v)} suffix="$/mo" step={500} />
-          <NumInput label="Rev Share" value={(assumptions.bdmRevSharePct || 0) * 100} onChange={v => upd('bdmRevSharePct', v/100)} suffix="%" step={0.5} />
-          <NumInput label="Commission" value={(assumptions.bdmCommissionRate || 0) * 100} onChange={v => upd('bdmCommissionRate', v/100)} suffix="%" step={0.1} />
-          <NumInput label="Trailing Months" value={assumptions.bdmTrailingMonths || 12} onChange={v => upd('bdmTrailingMonths', v)} suffix="M" />
+          <NumInput label="Trailing Comm (bps)" value={(assumptions.bdmCommissionRate || 0) * 10000} onChange={v => upd('bdmCommissionRate', v/10000)} suffix="bps" step={5} />
+          <NumInput label="Trailing Months" value={assumptions.bdmTrailingMonths || 24} onChange={v => upd('bdmTrailingMonths', v)} suffix="M" />
         </>)}
       </Section>
       
@@ -59,8 +83,8 @@ window.FundModel.Controls = function Controls({ assumptions, onUpdate }) {
           <NumInput label="Start Month" value={assumptions.brokerCapitalStartMonth || 3} onChange={v => upd('brokerCapitalStartMonth', v)} suffix="M" />
           <NumInput label="Monthly Capital" value={assumptions.brokerMonthlyCapital || 500000} onChange={v => upd('brokerMonthlyCapital', v)} suffix="$" step={100000} />
           <NumInput label="Retainer" value={assumptions.brokerRetainer || 0} onChange={v => upd('brokerRetainer', v)} suffix="$/mo" step={500} />
-          <NumInput label="Commission" value={(assumptions.brokerCommissionRate || 0.01) * 100} onChange={v => upd('brokerCommissionRate', v/100)} suffix="%" step={0.1} />
-          <NumInput label="Trailing Months" value={assumptions.brokerTrailingMonths || 12} onChange={v => upd('brokerTrailingMonths', v)} suffix="M" />
+          <NumInput label="Trailing Comm (bps)" value={(assumptions.brokerCommissionRate || 0.005) * 10000} onChange={v => upd('brokerCommissionRate', v/10000)} suffix="bps" step={5} />
+          <NumInput label="Trailing Months" value={assumptions.brokerTrailingMonths || 24} onChange={v => upd('brokerTrailingMonths', v)} suffix="M" />
         </>)}
       </Section>
       
@@ -74,10 +98,44 @@ window.FundModel.Controls = function Controls({ assumptions, onUpdate }) {
         <NumInput label="Setup Cost" value={assumptions.setupCost} onChange={v => upd('setupCost', v)} suffix="$" step={1000} />
       </Section>
       
-      <Section title="Redemptions" color="red">
+      {/* REDEMPTIONS - NEW EDITABLE UI */}
+      <Section title="📤 Redemptions" color="red">
         <ToggleInput label="Redemptions Enabled" value={assumptions.redemptionsEnabled} onChange={v => upd('redemptionsEnabled', v)} />
         {assumptions.redemptionsEnabled && (
-          <p className="text-xs text-gray-500 mt-2">Schedule: M25 $2M, M31 $3M (edit in config)</p>
+          <div className="mt-3 space-y-2">
+            <p className="text-xs text-gray-600 font-semibold">Schedule:</p>
+            {redemptionSchedule.length === 0 ? (
+              <p className="text-xs text-gray-400 italic">No redemptions scheduled</p>
+            ) : (
+              <table className="w-full text-xs">
+                <thead><tr className="border-b"><th className="text-left py-1">Month</th><th className="text-right py-1">Amount</th><th></th></tr></thead>
+                <tbody>
+                  {redemptionSchedule.map((r, i) => (
+                    <tr key={i} className="border-b border-gray-100">
+                      <td className="py-1">
+                        <input type="number" value={r.month} onChange={e => updateRedemption(i, 'month', parseInt(e.target.value) || 0)}
+                          className="w-12 px-1 py-0.5 text-center border rounded text-blue-600 font-mono" />
+                      </td>
+                      <td className="py-1 text-right">
+                        <input type="number" value={r.amount} onChange={e => updateRedemption(i, 'amount', parseInt(e.target.value) || 0)}
+                          step={500000} className="w-24 px-1 py-0.5 text-right border rounded text-blue-600 font-mono" />
+                      </td>
+                      <td className="py-1 text-right">
+                        <button onClick={() => removeRedemption(i)} className="text-red-500 hover:text-red-700 font-bold px-2">×</button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+            <div className="flex gap-2 items-center pt-2 border-t mt-2">
+              <input type="number" value={newRedMonth} onChange={e => setNewRedMonth(parseInt(e.target.value) || 0)} placeholder="M"
+                className="w-12 px-1 py-1 text-center border rounded text-xs" />
+              <input type="number" value={newRedAmount} onChange={e => setNewRedAmount(parseInt(e.target.value) || 0)} step={500000} placeholder="Amount"
+                className="w-24 px-1 py-1 text-right border rounded text-xs" />
+              <button onClick={addRedemption} className="px-3 py-1 bg-green-500 text-white rounded text-xs font-medium hover:bg-green-600">+ Add</button>
+            </div>
+          </div>
         )}
       </Section>
       
