@@ -1,122 +1,88 @@
-# Emergence Partners Fund Model v9.3
+# Emergence Partners Fund P&L Model v10.12
 
-24-month P&L projection model for Emergence Partners, a DIFC-based fund.
+36-month P&L projection model for Emergence Partners, a DIFC-based investment fund.
 
-## 🚀 Live Demo
-**https://ianhigginsep.github.io/emergence-fund-model-v9/**
+**Live Site**: https://ianhigginsep.github.io/emergence-fund-model-v9/
 
-## v9.3 Key Changes (January 20, 2026)
+## Quick Start
 
-- **24-month horizon** (reduced from 36)
-- **Launch Date**: February 23, 2026
-- **Carry below the line** — excluded from cash flow and breakeven calculations
-- **EBITDA tracking** — Operating Revenue minus Cash Expenses
-- **Ian salary as roll-up** — accrues to Shareholder Loan, not deducted from cash
-- **New personnel costs**: Lewis $8,850/mo, Emma $1,000/mo, Adrian $2,300/mo
-- **New OpEx**: Leventus $6,300, Admin $1,600, Office $760, Tech $500, Mobile $250
-- **KPI Table**: Revenue/AUM Yield, EBITDA/AUM Efficiency
-- **Target breakeven**: Month 7
+Open `index.html` in a browser or visit the live site above. No build step required.
 
-## Architecture
+## Key Features
+
+- **Bootstrapped Funding**: No external debt, founder funding tracked 50/50
+- **PPM-Compliant Share Classes**: Founder, A, B, C with proper fee structures
+- **Pre-Launch Costs**: M-11 to M-1 shown separately with personnel costs
+- **BDM/Broker Economics**: Toggleable with configurable rev-share
+- **Shareholder Loan Tracking**: Below-the-line accruals for founder salaries, marketing, travel
+- **Scenario Analysis**: Base, Downside, Upside 1, Upside 2
+
+## File Structure
 
 ```
 emergence-fund-model-v9/
-├── index.html              # Entry point
+├── index.html              # Entry point (loads all scripts)
 ├── config/
-│   ├── assumptions.js      # Timeline, Personnel, OpEx, Revenue config
-│   ├── scenarios.js        # Preset scenarios
-│   └── share-classes.js    # PPM share class definitions
+│   ├── assumptions.js      # All editable inputs (timeline, salaries, opex)
+│   ├── scenarios.js        # Preset scenarios (Base, Downside, etc.)
+│   ├── capital.js          # Capital raise schedule by month
+│   └── share-classes.js    # PPM class definitions
 ├── model/
-│   ├── engine.js           # Core calculation (24-month loop)
-│   ├── cashflow.js         # Monthly calculations
-│   ├── summaries.js        # Annual aggregations
-│   ├── metrics.js          # IRR, MOIC, TVPI, DPI
-│   └── shareholderLoan.js  # "The Pot" tracking
-└── ui/
-    ├── App.js              # Main shell
-    ├── Dashboard.js        # KPIs with Below the Line section
-    ├── CashFlow.js         # Monthly statement with EBITDA
-    ├── KPITable.js         # Revenue/AUM, EBITDA/AUM metrics
-    ├── Charts.js           # Visualizations
-    └── [other components]
+│   ├── engine.js           # Core calculation loop (MOST LOGIC HERE)
+│   ├── summaries.js        # Annual aggregation functions
+│   ├── recoverables.js     # Recoverable cost tracking
+│   └── formatters.js       # Number formatting (fmt, fmtPct)
+├── ui/
+│   ├── App.js              # Main shell, tab navigation
+│   ├── Dashboard.js        # KPI cards, validation banner
+│   ├── Tables.js           # Cash flow statement, AUM table
+│   ├── Charts.js           # Visualizations
+│   └── Controls.js         # Assumptions input controls
+└── docs/
+    └── BUG_LIST_V10.12.md  # Known issues and fixes
 ```
 
-**Rule: No file over 150 lines**
+## Key Timeline
 
-## Tech Stack
+| Event | Date | Model Month |
+|-------|------|-------------|
+| Model Start | March 1, 2025 | M-11 |
+| Lewis Starts | August 1, 2025 | M-6 |
+| Fund Launch | February 1, 2026 | M0 |
+| Projection End | January 2029 | M35 |
 
-- React 18 (CDN)
-- Babel Standalone (JSX compilation)
-- Tailwind CSS (CDN)
-- GitHub Pages (hosting)
+## Key Personnel
 
-No build step required — uses `window.FundModel` namespace for browser compatibility.
+| Role | Monthly | Notes |
+|------|---------|-------|
+| Ian | $5K pre-BE / $10K post-BE | Accrued to shareholder loan |
+| Paul | $5K pre-BE / $10K post-BE | Cash draw (configurable) |
+| Lewis | $7,000 | 12 months including pre-launch (M-6 to M5) |
+| EA | $1,000 | Starts M0 |
+| Adrian | $1,667 | Starts M-6 |
+| Chairman | $5,000 quarterly | Starts M4 |
 
-## Personnel (Monthly USD)
+## Default Assumptions
 
-| Role | Amount | Notes |
-|------|--------|-------|
-| Ian | $5K pre-BE / $10K post-BE | Roll-up (Shareholder Loan) |
-| Paul | $5K pre-BE / $10K post-BE | Cash draw (toggleable) |
-| Lewis | $8,850 | 12 months from M-5 |
-| Emma | $1,000 | EA from launch |
-| Adrian | $2,300 | From M-6 |
+- **Starting Cash**: $367,000
+- **Management Fee**: 1.5% annually
+- **Carry Rate**: 17.5%
+- **Annual Return**: 14%
+- **GP Commitment**: 2%
 
-## Operating Expenses (Monthly USD)
+## Editing
 
-| Item | Amount |
-|------|--------|
-| Leventus (Compliance) | $6,300 |
-| Admin/Custodial | $1,600 |
-| Office | $760 |
-| Tech | $500 |
-| Mobile | $250 |
-| Marketing | $0 pre-BE / $1K post-BE |
-| Travel | $500 pre-BE / $1K post-BE |
+1. Config files are in `/config/` - edit assumptions.js for most changes
+2. Model logic is in `/model/engine.js` - edit carefully, test after changes
+3. UI components are in `/ui/` - each file handles one tab
 
-## Key Metrics
+**Rule**: No file over 150 lines. Keep changes surgical.
 
-| Metric | Target |
-|--------|--------|
-| Breakeven | Month 7 |
-| Y1 AUM (Downside) | $30M |
+## Validation
 
-## Scenarios
-
-| Scenario | Return | Capital | Description |
-|----------|--------|---------|-------------|
-| Downside | 7% | 50% | Stressed case |
-| Base | 14% | 100% | Expected case |
-| Upside 1 | 14% | 100% | With BDM revenue share |
-| Upside 2 | 14% | 100% | Higher BDM share |
-
-## Development
-
-### Making Changes
-
-1. Edit the appropriate module file
-2. Test locally by opening `index.html`
-3. Push to GitHub — auto-deploys via GitHub Pages
-
-### Editing Rules
-
-- Keep files under 150 lines
-- Use `window.FundModel` namespace for globals
-- Don't break the modular structure
-- Test all scenarios after changes
-
-## Version History
-
-| Version | Date | Changes |
-|---------|------|---------|
-| v9.3 | Jan 20, 2026 | 24mo horizon, carry below line, new expenses |
-| v9.2 | Jan 20, 2026 | LP metrics (IRR, MOIC, TVPI, DPI) |
-| v9.1 | Jan 20, 2026 | J-Curve, waterfalls |
-| v9.0 | Jan 19, 2026 | Modular architecture |
-
-## Related Repos
-
-- [emergence-fund-model](https://github.com/IanhigginsEP/emergence-fund-model) — Original repo (deprecated monolithic + working modular)
+After any change, verify on Dashboard:
+- All reconciliations should pass (green checkmarks)
+- AUM ✓ | Cash ✓ | Share Classes ✓
 
 ## License
 
