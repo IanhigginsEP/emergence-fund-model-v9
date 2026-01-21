@@ -1,5 +1,5 @@
 // model/engine.js - Core P&L calculation loop
-// v10.9: Added trailing broker commission + BDM retainer expense
+// v10.11: Share class fee integration - GP Commit → Founder (0%), LP → Class A (1.5%)
 
 window.FundModel = window.FundModel || {};
 
@@ -18,15 +18,16 @@ window.FundModel.shouldRollUp = function(mode, endMonth, currentMonth, breakEven
 
 window.FundModel.runModel = function(assumptions, capitalInputs, returnMult, bdmRevShare) {
   returnMult = returnMult || 1.0;
-  // Use bdmRevShare from assumptions if not passed directly
   bdmRevShare = bdmRevShare !== undefined ? bdmRevShare : (assumptions.bdmRevSharePct || 0);
   
   const revenueConfig = window.FundModel.REVENUE || {};
   const carryBelowLine = revenueConfig.carryBelowLine !== false;
+  const shareClasses = window.FundModel.SHARE_CLASSES || {};
   
   const effectiveReturn = assumptions.annualReturn * returnMult;
   const startingCashUSD = assumptions.startingCashUSD || 367000;
   const eaSalary = assumptions.eaSalary || 1000;
+  const gpCommitRate = assumptions.gpCommitmentRate || 0.02;
   
   // Founder salary toggle modes
   const ianRollUpMode = assumptions.ianRollUpMode || 'untilBreakeven';
@@ -54,13 +55,14 @@ window.FundModel.runModel = function(assumptions, capitalInputs, returnMult, bdm
   const brokerTrailingMonths = assumptions.brokerTrailingMonths || 12;
   
   // Track broker raises for trailing commission calculation
-  const brokerRaiseHistory = []; // { month, amount }
+  const brokerRaiseHistory = [];
   
   const months = [];
   let breakEvenMonth = null;
   let rollingEBITDA = [0, 0, 0];
   let cumulativeCarryPrivate = 0, cumulativeCarryPublic = 0;
   let cumulativeFounderFunding = 0, cumulativeBDMAUM = 0;
+  let cumulativeGPCommit = 0, cumulativeLPCapital = 0;
   let shareholderLoanBalance = window.FundModel.getInitialShareholderLoan();
   const preLaunchData = [];
   let preLaunchCosts = 0;
@@ -72,6 +74,7 @@ window.FundModel.runModel = function(assumptions, capitalInputs, returnMult, bdm
     const prev = months.length > 0 ? months[months.length - 1] : {
       closingAUM: 0, closingCash: startingCashUSD, cumulativeCapital: 0,
       cumulativeBDMAUM: 0, cumulativeFounderFunding: 0, shareholderLoanBalance,
+      cumulativeGPCommit: 0, cumulativeLPCapital: 0,
     };
     
     // Capital
@@ -79,16 +82,17 @@ window.FundModel.runModel = function(assumptions, capitalInputs, returnMult, bdm
     const bdmRaise = isPreLaunch ? 0 : inp.bdmRaise;
     const brokerRaise = isPreLaunch ? 0 : inp.brokerRaise;
     
-    // Track broker raises for trailing commission
-    if (brokerRaise > 0) {
-      brokerRaiseHistory.push({ month: m, amount: brokerRaise });
-    }
+    if (brokerRaise > 0) brokerRaiseHistory.push({ month: m, amount: brokerRaise });
     
     const lpCapital = gpOrganic + bdmRaise + brokerRaise;
-    const gpCommitment = lpCapital * assumptions.gpCommitmentRate;
+    const gpCommitment = lpCapital * gpCommitRate;
     const newCapital = lpCapital + gpCommitment;
     const redemption = isPreLaunch ? 0 : (inp.redemption || 0);
     const netCapital = newCapital - redemption;
+    
+    // Track cumulative GP Commit and LP Capital for share class allocation
+    cumulativeGPCommit = prev.cumulativeGPCommit + gpCommitment;
+    cumulativeLPCapital = prev.cumulativeLPCapital + lpCapital;
     
     const openingAUM = prev.closingAUM;
     const preReturnAUM = openingAUM + netCapital;
@@ -99,6 +103,25 @@ window.FundModel.runModel = function(assumptions, capitalInputs, returnMult, bdm
     cumulativeBDMAUM = prev.cumulativeBDMAUM + bdmRaise;
     const bdmAUMProportion = closingAUM > 0 ? Math.min(cumulativeBDMAUM / closingAUM, 1) : 0;
     
+    // Share class allocation: GP Commit → Founder, LP → Class A
+    const founderPct = (cumulativeGPCommit + cumulativeLPCapital) > 0 
+      ? cumulativeGPCommit / (cumulativeGPCommit + cumulativeLPCapital) 
+      : gpCommitRate / (1 + gpCommitRate);
+    const classAPct = 1 - founderPct;
+    
+    // AUM by share class
+    const founderAUM = openingAUM * founderPct;
+    const classAAUM = openingAUM * classAPct;
+    
+    // Management fee by share class (Founder = 0%, Class A = 1.5%)
+    const founderMgmtFee = 0; // Founder class has no management fee
+    const classAMgmtFeeRate = shareClasses.classA?.mgmtFee || 0.015;
+    const classAMgmtFee = isPreLaunch ? 0 : classAAUM * (classAMgmtFeeRate / 12);
+    const grossMgmtFee = founderMgmtFee + classAMgmtFee;
+    
+    // Weighted average fee rate for reporting
+    const weightedMgmtRate = openingAUM > 0 ? (grossMgmtFee * 12) / openingAUM : 0;
+    
     // Carry
     const privateWeight = 1 - assumptions.publicWeight;
     const carryPrivate = investmentGain * privateWeight * assumptions.carryRatePrivate;
@@ -107,8 +130,7 @@ window.FundModel.runModel = function(assumptions, capitalInputs, returnMult, bdm
     cumulativeCarryPrivate += carryPrivate;
     cumulativeCarryPublic += carryPublic;
     
-    // Management fee
-    const grossMgmtFee = isPreLaunch ? 0 : openingAUM * (assumptions.mgmtFeeAnnual / 12);
+    // BDM fee share (from gross mgmt fee)
     const bdmFeeShare = grossMgmtFee * bdmAUMProportion * bdmRevShare;
     const mgmtFee = grossMgmtFee - bdmFeeShare;
     const operatingRevenue = mgmtFee;
@@ -161,35 +183,27 @@ window.FundModel.runModel = function(assumptions, capitalInputs, returnMult, bdm
     const setupCost = m === 0 ? assumptions.setupCost : 0;
     
     // US Feeder Fund expense
-    let usFeederExpense = 0;
-    let usFeederLpExpense = 0;
+    let usFeederExpense = 0, usFeederLpExpense = 0;
     if (usFeederMonth !== null && m === usFeederMonth) {
-      if (usFeederIsGpExpense) {
-        usFeederExpense = usFeederAmount;
-      } else {
-        usFeederLpExpense = usFeederAmount;
-      }
+      if (usFeederIsGpExpense) usFeederExpense = usFeederAmount;
+      else usFeederLpExpense = usFeederAmount;
     }
     
-    // BDM expenses: retainer (from start month onwards)
+    // BDM & Broker expenses
     const bdmRetainerExpense = (!isPreLaunch && m >= bdmStartMonth) ? bdmRetainer : 0;
-    
-    // Broker expenses: retainer + trailing commission
     const brokerRetainerExpense = (!isPreLaunch && m >= brokerStartMonth) ? brokerRetainer : 0;
     
-    // Calculate trailing commission: sum of commissions on raises within trailing window
     let brokerTrailingComm = 0;
     if (!isPreLaunch) {
       brokerRaiseHistory.forEach(raise => {
-        // Commission applies for brokerTrailingMonths after the raise
         if (m >= raise.month && m < raise.month + brokerTrailingMonths) {
-          brokerTrailingComm += raise.amount * brokerCommRate / 12; // Monthly portion of annual rate
+          brokerTrailingComm += raise.amount * brokerCommRate / 12;
         }
       });
     }
     
     const totalBrokerExpense = brokerRetainerExpense + brokerTrailingComm;
-    const totalBdmExpense = bdmRetainerExpense + bdmFeeShare; // Rev share is also tracked here
+    const totalBdmExpense = bdmRetainerExpense + bdmFeeShare;
     
     const totalOpexCash = officeIT + marketingCash + travelCash + compliance + setupCost + usFeederExpense;
     const totalOpex = officeIT + marketingAmount + travelAmount + compliance + setupCost + usFeederExpense;
@@ -230,8 +244,16 @@ window.FundModel.runModel = function(assumptions, capitalInputs, returnMult, bdm
     months.push({
       month: m, label: 'M'+m, isPreLaunch, isPostBreakeven, openingAUM, gpOrganic, bdmRaise, brokerRaise,
       lpCapital, gpCommitment, newCapital, redemption, netCapital, investmentGain, closingAUM, cumulativeCapital,
-      cumulativeBDMAUM, bdmAUMProportion, grossMgmtFee, bdmFeeShare, mgmtFee, 
-      operatingRevenue, carryRevenue, totalRevenue,
+      cumulativeBDMAUM, cumulativeGPCommit, cumulativeLPCapital, bdmAUMProportion,
+      // Share class breakdown
+      shareClasses: {
+        founder: { aum: founderAUM, pct: founderPct, mgmtFee: founderMgmtFee },
+        classA: { aum: classAAUM, pct: classAPct, mgmtFee: classAMgmtFee },
+        classB: { aum: 0, pct: 0, mgmtFee: 0 },
+        classC: { aum: 0, pct: 0, mgmtFee: 0 },
+      },
+      weightedMgmtRate,
+      grossMgmtFee, bdmFeeShare, mgmtFee, operatingRevenue, carryRevenue, totalRevenue,
       carryPrivate, carryPublic, cumulativeCarryPrivate, cumulativeCarryPublic, 
       ianSalary: ianSalaryAmount, ianCashExpense, ianAccrual, ianRollUp: ianShouldRollUp,
       paulSalary: paulSalaryAmount, paulCashExpense, paulAccrual, paulRollUp: paulShouldRollUp,
@@ -241,8 +263,7 @@ window.FundModel.runModel = function(assumptions, capitalInputs, returnMult, bdm
       usFeederExpense, usFeederLpExpense,
       bdmRetainerExpense, bdmFeeShare: bdmFeeShare, totalBdmExpense,
       brokerRetainerExpense, brokerTrailingComm, totalBrokerExpense,
-      totalOpex, totalOpexCash,
-      totalCashExpenses, totalExpenses, ebitda, ebt, netIncome, netCashFlow,
+      totalOpex, totalOpexCash, totalCashExpenses, totalExpenses, ebitda, ebt, netIncome, netCashFlow,
       closingCash: adjustedClosingCash, founderFundingRequired, cumulativeFounderFunding, shareholderLoanBalance,
     });
   });
