@@ -1,5 +1,6 @@
-// ui/Charts.js - Visualizations for AUM, cash, burn rate
-// v10.18: Added AUM milestone annotations (BUG-104)
+// ui/Charts.js - Visualizations v10.19
+// ADDED: AUM by Source chart (Issue #6)
+// EXISTING: AUM milestone annotations (BUG-104)
 
 window.FundModel = window.FundModel || {};
 
@@ -10,7 +11,6 @@ window.FundModel.AUMChart = function AUMChart({ model }) {
   const maxAUM = Math.max(...months.map(m => m.closingAUM));
   const postLaunch = months.filter(m => m.month >= 0);
   
-  // Calculate milestone values
   const m12Data = postLaunch.find(m => m.month === 11);
   const m24Data = postLaunch.find(m => m.month === 23);
   const m36Data = postLaunch.find(m => m.month === 35);
@@ -44,7 +44,6 @@ function AUMChartSVG({ data, max, milestones, fmt }) {
   
   return (
     <svg viewBox={`0 0 ${w} ${h}`} className="w-full h-52">
-      {/* Y-axis grid lines and labels */}
       {[0, 0.25, 0.5, 0.75, 1].map((pct, i) => {
         const val = effectiveMax * pct;
         const y = scaleY(val);
@@ -55,36 +54,110 @@ function AUMChartSVG({ data, max, milestones, fmt }) {
           </g>
         );
       })}
-      
-      {/* X-axis labels */}
       {[0, 11, 23, 35].map(i => (
         <text key={i} x={scaleX(i)} y={h - 8} textAnchor="middle" className="text-xs fill-gray-500">M{i}</text>
       ))}
-      
-      {/* Axis titles */}
       <text x={15} y={h / 2} transform={`rotate(-90 15 ${h/2})`} textAnchor="middle" className="text-xs fill-gray-400">AUM ($)</text>
-      <text x={w / 2} y={h - 2} textAnchor="middle" className="text-xs fill-gray-400">Month</text>
-      
-      {/* Main curve */}
       <path d={path} fill="none" stroke="#3b82f6" strokeWidth="2.5" />
-      
-      {/* Milestone annotations (BUG-104) */}
       {milestones.filter(m => m.value !== undefined).map(m => {
         const x = scaleX(m.idx);
         const y = scaleY(m.value);
         return (
           <g key={m.label}>
-            {/* Vertical reference line */}
             <line x1={x} x2={x} y1={y} y2={padT + plotH} stroke="#3b82f6" strokeWidth="1" strokeDasharray="3,3" opacity="0.5" />
-            {/* Dot */}
             <circle cx={x} cy={y} r="5" fill="#3b82f6" />
-            {/* Label background */}
             <rect x={x - 30} y={y - 22} width="60" height="18" rx="3" fill="#3b82f6" opacity="0.9" />
-            {/* Label text */}
             <text x={x} y={y - 9} textAnchor="middle" className="text-xs fill-white font-semibold">{fmt(m.value)}</text>
           </g>
         );
       })}
+    </svg>
+  );
+}
+
+// NEW: AUM by Source Chart (Issue #6)
+window.FundModel.AUMBySourceChart = function AUMBySourceChart({ model }) {
+  const { formatCurrency } = window.FundModel;
+  const fmt = formatCurrency;
+  const { months } = model;
+  const postLaunch = months.filter(m => m.month >= 0);
+  
+  // Calculate cumulative capital by source
+  let cumGP = 0, cumBDM = 0, cumBroker = 0;
+  const sourceData = postLaunch.map(m => {
+    cumGP += m.gpOrganic || 0;
+    cumBDM += m.bdmRaise || 0;
+    cumBroker += m.brokerRaise || 0;
+    return { month: m.month, gp: cumGP, bdm: cumBDM, broker: cumBroker, total: cumGP + cumBDM + cumBroker };
+  });
+  
+  const lastMonth = sourceData[sourceData.length - 1] || { gp: 0, bdm: 0, broker: 0, total: 1 };
+  const gpPct = lastMonth.total > 0 ? (lastMonth.gp / lastMonth.total * 100).toFixed(1) : 0;
+  const bdmPct = lastMonth.total > 0 ? (lastMonth.bdm / lastMonth.total * 100).toFixed(1) : 0;
+  const brokerPct = lastMonth.total > 0 ? (lastMonth.broker / lastMonth.total * 100).toFixed(1) : 0;
+  
+  const maxTotal = Math.max(...sourceData.map(d => d.total)) || 1;
+  
+  return (
+    <div className="bg-white rounded-lg shadow p-4">
+      <h2 className="font-semibold mb-3">Capital by Source</h2>
+      <AUMBySourceSVG data={sourceData} max={maxTotal} fmt={fmt} />
+      <div className="mt-3 grid grid-cols-3 gap-2 text-center">
+        <div className="bg-blue-50 rounded p-2">
+          <p className="text-xs text-blue-600 uppercase">GP Organic</p>
+          <p className="text-lg font-bold text-blue-700">{fmt(lastMonth.gp)}</p>
+          <p className="text-xs text-blue-500">{gpPct}%</p>
+        </div>
+        <div className="bg-green-50 rounded p-2">
+          <p className="text-xs text-green-600 uppercase">BDM Raise</p>
+          <p className="text-lg font-bold text-green-700">{fmt(lastMonth.bdm)}</p>
+          <p className="text-xs text-green-500">{bdmPct}%</p>
+        </div>
+        <div className="bg-orange-50 rounded p-2">
+          <p className="text-xs text-orange-600 uppercase">Broker Raise</p>
+          <p className="text-lg font-bold text-orange-700">{fmt(lastMonth.broker)}</p>
+          <p className="text-xs text-orange-500">{brokerPct}%</p>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+function AUMBySourceSVG({ data, max, fmt }) {
+  const h = 180, w = 700, padL = 60, padR = 80, padT = 10, padB = 30;
+  const plotW = w - padL - padR, plotH = h - padT - padB;
+  
+  const scaleY = v => padT + plotH - (v / max) * plotH;
+  const scaleX = i => padL + (i / (data.length - 1)) * plotW;
+  
+  const gpPath = data.map((d, i) => `${i === 0 ? 'M' : 'L'}${scaleX(i)},${scaleY(d.gp)}`).join(' ');
+  const bdmPath = data.map((d, i) => `${i === 0 ? 'M' : 'L'}${scaleX(i)},${scaleY(d.gp + d.bdm)}`).join(' ');
+  const brokerPath = data.map((d, i) => `${i === 0 ? 'M' : 'L'}${scaleX(i)},${scaleY(d.total)}`).join(' ');
+  
+  return (
+    <svg viewBox={`0 0 ${w} ${h}`} className="w-full h-44">
+      {[0, 0.5, 1].map((pct, i) => {
+        const val = max * pct;
+        return (
+          <g key={i}>
+            <line x1={padL} x2={w - padR} y1={scaleY(val)} y2={scaleY(val)} stroke="#e5e7eb" strokeDasharray="4,4" />
+            <text x={padL - 5} y={scaleY(val) + 4} textAnchor="end" className="text-xs fill-gray-500">{fmt(val)}</text>
+          </g>
+        );
+      })}
+      {[0, 11, 23, 35].map(i => (
+        <text key={i} x={scaleX(i)} y={h - 5} textAnchor="middle" className="text-xs fill-gray-500">M{i}</text>
+      ))}
+      <path d={gpPath} fill="none" stroke="#3b82f6" strokeWidth="2" />
+      <path d={bdmPath} fill="none" stroke="#22c55e" strokeWidth="2" />
+      <path d={brokerPath} fill="none" stroke="#f97316" strokeWidth="2" />
+      {/* Legend */}
+      <rect x={w - 75} y={10} width="10" height="10" fill="#3b82f6" />
+      <text x={w - 60} y={18} className="text-xs fill-gray-600">GP</text>
+      <rect x={w - 75} y={25} width="10" height="10" fill="#22c55e" />
+      <text x={w - 60} y={33} className="text-xs fill-gray-600">BDM</text>
+      <rect x={w - 75} y={40} width="10" height="10" fill="#f97316" />
+      <text x={w - 60} y={48} className="text-xs fill-gray-600">Broker</text>
     </svg>
   );
 }
@@ -111,9 +184,9 @@ window.FundModel.BurnRateChart = function BurnRateChart({ model }) {
   
   return (
     <div className="bg-white rounded-lg shadow p-4">
-      <h2 className="font-semibold mb-3">Monthly Burn Rate (Expenses - Revenue)</h2>
+      <h2 className="font-semibold mb-3">Monthly Burn Rate</h2>
       <SimpleSVGChart data={burnData} max={max} color="#ef4444" negColor="#22c55e" label="Burn" showZero invert />
-      <p className="text-xs text-gray-500 mt-2">Positive = burning cash, Negative = generating cash</p>
+      <p className="text-xs text-gray-500 mt-2">Positive = burning, Negative = generating</p>
     </div>
   );
 };
