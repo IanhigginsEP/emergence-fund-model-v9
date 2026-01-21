@@ -1,4 +1,4 @@
-// config/assumptions.js v10.13 - Fixed per user feedback
+// config/assumptions.js v10.14 - Added BDM trailing commission parameters
 // Model Start: March 1, 2025 | Fund Launch: February 1, 2026 | Lewis: Aug 1, 2025
 window.FundModel = window.FundModel || {};
 
@@ -49,7 +49,7 @@ window.FundModel.US_FEEDER = { amount: 30000, month: null, isGpExpense: true };
 
 window.FundModel.CAPITAL = {
   gpOrganic: { m0to3: 2000000, m4to11: 3000000, m12plus: 2500000 },
-  bdm: { enabled: true, startMonth: 7, monthly: 500000, retainer: 0, revSharePct: 0 },
+  bdm: { enabled: true, startMonth: 7, monthly: 500000, retainer: 0, revSharePct: 0, commissionRate: 0, trailingMonths: 12 },
   brokerRaise: { enabled: true, startMonth: 3, monthly: 500000, retainer: 0, commissionRate: 0.01, trailingMonths: 12 },
 };
 
@@ -80,7 +80,7 @@ window.FundModel.DEFAULT_ASSUMPTIONS = {
   travelPreBE: 2000, travelPostBE: 2000, travelRollUp: false,
   compliance: 6500, setupCost: 10000,
   gpOrganicM0to3: 2000000, gpOrganicM4to11: 3000000, gpOrganicM12plus: 2500000,
-  bdmEnabled: true, bdmCapitalStartMonth: 7, bdmMonthlyCapital: 500000, bdmRetainer: 0, bdmRevSharePct: 0,
+  bdmEnabled: true, bdmCapitalStartMonth: 7, bdmMonthlyCapital: 500000, bdmRetainer: 0, bdmRevSharePct: 0, bdmCommissionRate: 0, bdmTrailingMonths: 12,
   brokerEnabled: true, brokerCapitalStartMonth: 3, brokerMonthlyCapital: 500000, brokerRetainer: 0, brokerCommissionRate: 0.01, brokerTrailingMonths: 12,
   redemptionsEnabled: false, redemptionSchedule: [{ month: 25, amount: 2000000 }, { month: 31, amount: 3000000 }],
   usFeederMonth: null, usFeederAmount: 30000, usFeederIsGpExpense: true,
