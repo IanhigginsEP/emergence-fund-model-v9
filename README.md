@@ -1,4 +1,4 @@
-# Emergence Partners Fund P&L Model v10.12
+# Emergence Partners Fund P&L Model v10.16
 
 36-month P&L projection model for Emergence Partners, a DIFC-based investment fund.
 
@@ -8,14 +8,38 @@
 
 Open `index.html` in a browser or visit the live site above. No build step required.
 
+## ⚠️ Important: Financial Structure
+
+**Read [docs/FINANCIAL_STRUCTURE.md](docs/FINANCIAL_STRUCTURE.md) before making changes.**
+
+The model tracks TWO separate loan balances:
+
+| Loan | Direction | Amount | Purpose |
+|------|-----------|--------|--------|
+| **Stone Park** | TO the fund | $367K | Starting cash at M0 |
+| **Shareholder Loan** | TO founders | ~$126K+ | Pre-launch costs owed to Ian |
+
+The $367K is NOT injected when needed — it's the starting cash. Cash CAN go negative as a warning output.
+
 ## Key Features
 
-- **Bootstrapped Funding**: No external debt, founder funding tracked 50/50
+- **Bootstrapped Funding**: $367K starting capital, founder funding tracked 50/50
 - **PPM-Compliant Share Classes**: Founder, A, B, C with proper fee structures
-- **Pre-Launch Costs**: M-11 to M-1 shown separately with personnel costs
+- **Pre-Launch Costs**: M-11 to M-1 shown separately (toggle in UI)
 - **BDM/Broker Economics**: Toggleable with configurable rev-share
-- **Shareholder Loan Tracking**: Below-the-line accruals for founder salaries, marketing, travel
+- **Shareholder Loan Tracking**: Below-the-line accruals for salaries, marketing, travel
 - **Scenario Analysis**: Base, Downside, Upside 1, Upside 2
+
+## Validation Targets
+
+See [docs/VALIDATION_TARGETS.md](docs/VALIDATION_TARGETS.md) for full list.
+
+| Metric | Base Case Target |
+|--------|------------------|
+| M0 Starting Cash | $367,000 (exact) |
+| Breakeven | M5-M7 |
+| Y3 AUM | ~$140M |
+| Total Founder Funding | ~$182K |
 
 ## File Structure
 
@@ -23,15 +47,15 @@ Open `index.html` in a browser or visit the live site above. No build step requi
 emergence-fund-model-v9/
 ├── index.html              # Entry point (loads all scripts)
 ├── config/
-│   ├── assumptions.js      # All editable inputs (timeline, salaries, opex)
-│   ├── scenarios.js        # Preset scenarios (Base, Downside, etc.)
+│   ├── assumptions.js      # STONE_PARK, SHAREHOLDER_LOAN, personnel, opex
+│   ├── scenarios.js        # Preset scenarios
 │   ├── capital.js          # Capital raise schedule by month
 │   └── share-classes.js    # PPM class definitions
 ├── model/
-│   ├── engine.js           # Core calculation loop (MOST LOGIC HERE)
-│   ├── summaries.js        # Annual aggregation functions
+│   ├── engine.js           # Core calculation loop
+│   ├── summaries.js        # Annual aggregation, loan status functions
 │   ├── recoverables.js     # Recoverable cost tracking
-│   └── formatters.js       # Number formatting (fmt, fmtPct)
+│   └── formatters.js       # Number formatting
 ├── ui/
 │   ├── App.js              # Main shell, tab navigation
 │   ├── Dashboard.js        # KPI cards, validation banner
@@ -39,7 +63,9 @@ emergence-fund-model-v9/
 │   ├── Charts.js           # Visualizations
 │   └── Controls.js         # Assumptions input controls
 └── docs/
-    └── BUG_LIST_V10.12.md  # Known issues and fixes
+    ├── FINANCIAL_STRUCTURE.md  # READ THIS FIRST
+    ├── VALIDATION_TARGETS.md   # Expected outputs
+    └── BUG_LIST_V10.12.md      # Known issues
 ```
 
 ## Key Timeline
@@ -60,29 +86,22 @@ emergence-fund-model-v9/
 | Lewis | $7,000 | 12 months including pre-launch (M-6 to M5) |
 | EA | $1,000 | Starts M0 |
 | Adrian | $1,667 | Starts M-6 |
-| Chairman | $5,000 quarterly | Starts M4 |
 
-## Default Assumptions
+## Editing Rules
 
-- **Starting Cash**: $367,000
-- **Management Fee**: 1.5% annually
-- **Carry Rate**: 17.5%
-- **Annual Return**: 14%
-- **GP Commitment**: 2%
+1. **Read docs/FINANCIAL_STRUCTURE.md first**
+2. Config files are in `/config/` — edit assumptions.js for most changes
+3. Model logic is in `/model/engine.js` — edit carefully, test after changes
+4. **No file over 150 lines** — keep changes surgical
+5. After any change, verify all reconciliations pass (green checkmarks)
 
-## Editing
+## After Any Change
 
-1. Config files are in `/config/` - edit assumptions.js for most changes
-2. Model logic is in `/model/engine.js` - edit carefully, test after changes
-3. UI components are in `/ui/` - each file handles one tab
-
-**Rule**: No file over 150 lines. Keep changes surgical.
-
-## Validation
-
-After any change, verify on Dashboard:
-- All reconciliations should pass (green checkmarks)
-- AUM ✓ | Cash ✓ | Share Classes ✓
+1. Open live site or index.html
+2. Verify M0 Cash = $367K
+3. Verify all 3 reconciliation checks pass (AUM ✓ | Cash ✓ | Share Classes ✓)
+4. Verify breakeven is M5-M7 (base case)
+5. See [docs/VALIDATION_TARGETS.md](docs/VALIDATION_TARGETS.md) for full checklist
 
 ## License
 
