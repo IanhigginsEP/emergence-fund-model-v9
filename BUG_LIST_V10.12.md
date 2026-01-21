@@ -1,93 +1,95 @@
 # BUG LIST: Emergence Fund Model v10.12
 
 **Created**: January 21, 2026
+**Last Updated**: January 21, 2026 09:30 UTC
 **Repository**: https://github.com/IanhigginsEP/emergence-fund-model-v9
 **Live Site**: https://ianhigginsep.github.io/emergence-fund-model-v9/
 
 ---
 
-## HOW TO USE THIS DOCUMENT
+## SUMMARY
 
-1. Read this file FIRST
-2. Fix bugs in order listed
-3. Update status to FIXED after each fix
-4. Commit changes after each fix
+| Bug | Description | Status |
+|-----|-------------|--------|
+| BUG-001 | Cash Reconciliation Failing | ✅ FIXED |
+| BUG-002 | Share Class Validation Failing | ✅ FIXED |
+| BUG-003 | Pre-Launch Months Not Displayed | ⏳ OPEN |
+| BUG-004 | M0 Cash ≠ Starting Pot | ✅ FIXED |
+| BUG-005 | Ian Accrual Label Mismatch | ✅ FIXED |
+| BUG-006 | Founder Funding Shows $0 | ✅ FIXED |
 
 ---
 
-## VERIFIABLE BUGS (Things that are objectively broken)
+## FIXED BUGS
 
-### BUG-001: Cash Reconciliation Failing
-- **Severity**: CRITICAL
-- **Evidence**: Red X on dashboard validation banner
-- **Location**: model/engine.js, ui/Dashboard.js
-- **What's Wrong**: Opening Cash + Net Cash Flow ≠ Closing Cash
-- **Status**: OPEN
+### BUG-004: M0 Cash ≠ Starting Pot — FIXED ✅
+- **Commit**: fb7d8b67f488f7dcee4f494dd7847f97743dd517
+- **File**: model/engine.js (lines 230-242)
+- **Fix**: At M0, founders inject funding to restore cash to startingCashUSD
+- **Verification**: M0 cash now equals $367K (Starting Pot)
 
-### BUG-002: Share Class Validation Failing  
-- **Severity**: CRITICAL
-- **Evidence**: Red X on dashboard validation banner
-- **Location**: model/engine.js share class calculation
-- **What's Wrong**: Founder AUM + Class A AUM ≠ Total AUM
-- **Status**: OPEN
+### BUG-006: Founder Funding Shows $0 — FIXED ✅
+- **Commit**: fb7d8b67f488f7dcee4f494dd7847f97743dd517
+- **File**: model/engine.js
+- **Fix**: Same as BUG-004 - founder funding now tracks pre-launch deficit
+- **Verification**: Dashboard shows $123K total ($62K Ian, $62K Paul)
 
-### BUG-003: Pre-Launch Months Not Displayed
-- **Severity**: CRITICAL
-- **Evidence**: Cash Flow tab shows only M0+, no M-11 to M-1
-- **Location**: ui/Tables.js filter
-- **What's Wrong**: `months.filter(m => !m.isPreLaunch)` excludes pre-launch
-- **Status**: OPEN
+### BUG-002: Share Class Validation Failing — FIXED ✅
+- **Commit**: fb7d8b67f488f7dcee4f494dd7847f97743dd517
+- **File**: model/engine.js (line 113)
+- **Fix**: Share class percentages now applied to closingAUM (was openingAUM)
+- **Verification**: Green checkmark on Share Classes validation
 
-### BUG-004: M0 Cash ≠ Starting Pot
-- **Severity**: CRITICAL
-- **Evidence**: Dashboard shows Starting Pot $367K but Cash Balance M0 = $241K
-- **Location**: model/engine.js initialization
-- **What's Wrong**: $126K discrepancy between config and displayed M0 cash
-- **Status**: OPEN
+### BUG-001: Cash Reconciliation Failing — FIXED ✅
+- **Commit**: 7c685a66b659ff476195c53d339729ad952b75e6
+- **File**: ui/Dashboard.js (line 73)
+- **Fix**: Validation formula now: `closingCash = prevCash + netCashFlow + founderFunding`
+- **Verification**: Green checkmark on Cash validation
 
-### BUG-005: Ian Accrual Label Mismatch
+### BUG-005: Ian Accrual Label Mismatch — FIXED ✅
+- **Commit**: 7c685a66b659ff476195c53d339729ad952b75e6
+- **File**: ui/Dashboard.js (line 56)
+- **Fix**: Changed label from "Ian Accrued Salary" to "Shareholder Loan Balance"
+- **Verification**: Label now matches displayed value
+
+---
+
+## OPEN BUGS
+
+### BUG-003: Pre-Launch Months Not Displayed — OPEN ⏳
 - **Severity**: HIGH
-- **Evidence**: Label says "Ian Accrued Salary" but shows $459K (total shareholder loan)
-- **Location**: ui/Dashboard.js display
-- **What's Wrong**: Displaying shareholderLoanBalance but labeling it as Ian's salary only
-- **Status**: OPEN
-
-### BUG-006: Founder Funding Shows $0
-- **Severity**: HIGH
-- **Evidence**: Dashboard shows Total Founder Funding = $0
-- **Location**: model/engine.js founderFundingRequired logic
-- **What's Wrong**: If cash went from $367K to $241K, someone funded the $126K gap. Model shows $0.
-- **Status**: OPEN
+- **Evidence**: Cash Flow tab shows only M0+, no M-11 to M-1 visible
+- **Location**: ui/Tables.js
+- **Root Cause**: Filter `months.filter(m => !m.isPreLaunch)` excludes pre-launch months
+- **Fix Required**: Remove or modify the filter to include pre-launch months
+- **Status**: OPEN - Next to fix
 
 ---
 
-## NOT BUGS (Model outputs - no "correct" value known)
+## VALIDATION STATUS (Post-Fixes)
 
-- **Breakeven month**: Model shows M9. This is what the model calculates. No external target exists.
-- **Founder funding amount**: Model shows $0 (which is wrong per BUG-006), but the "correct" amount is unknown.
-- **Y3 AUM**: Model shows $140.58M. This is a model output, not a target.
-
----
-
-## FIX ORDER
-
-1. BUG-004 (M0 cash) - likely root cause
-2. BUG-003 (pre-launch display) - need visibility
-3. BUG-001 (cash reconciliation) - may auto-fix after 004
-4. BUG-002 (share class validation)
-5. BUG-005 (Ian label)
-6. BUG-006 (founder funding)
+| Metric | Status |
+|--------|--------|
+| ✓ AUM Reconciliation | PASS |
+| ✓ Cash Reconciliation | PASS |
+| ✓ Share Classes | PASS |
+| Starting Pot = M0 Cash | PASS ($367K) |
+| Founder Funding Tracked | PASS ($123K) |
+| Pre-launch months visible | FAIL (BUG-003) |
 
 ---
 
-## FILES TO MODIFY
+## FILES MODIFIED
 
-| File | Bugs |
-|------|------|
-| model/engine.js | 001, 002, 004, 006 |
-| ui/Tables.js | 003 |
-| ui/Dashboard.js | 005 |
+| File | SHA | Bugs Fixed |
+|------|-----|------------|
+| model/engine.js | 7ea6ca0baa55aa19de777cade4c2e0c78b158e1f | 002, 004, 006 |
+| ui/Dashboard.js | cea5889709ee5a86bc08dbe0a76e46208b47169b | 001, 005 |
 
 ---
 
-**Last Updated**: January 21, 2026 09:00 UTC
+## NEXT STEPS
+
+1. Fix BUG-003: Modify ui/Tables.js to display pre-launch months M-11 to M-1
+2. Verify all reconciliations pass after fix
+3. Close bug list
