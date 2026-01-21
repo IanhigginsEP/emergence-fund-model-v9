@@ -1,6 +1,6 @@
 // model/engine.js - Core P&L calculation loop
-// v10.18: CRITICAL FIX - Adrian duplication removed, cumulative founder funding fixed
-// Pre-launch costs go to shareholder loan, NOT deducted from starting pot
+// v10.20: CRITICAL FIX - M0 now properly starts at $367K Stone Park pot
+// Previous bug: M0 inherited closingCash=0 from M-1, causing all cash values to be wrong
 
 window.FundModel = window.FundModel || {};
 
@@ -80,10 +80,9 @@ window.FundModel.runModel = function(assumptions, capitalInputs, returnMult, bdm
     const isPreLaunch = m < 0;
     const isPostBreakeven = breakEvenMonth !== null && m > breakEvenMonth;
     
-    // CRITICAL FIX: M0 starts at EXACTLY $367K (Stone Park starting pot)
     const prev = months.length > 0 ? months[months.length - 1] : {
       closingAUM: 0, 
-      closingCash: isPreLaunch ? 0 : startingCashUSD,
+      closingCash: 0, // Pre-launch cash is tracked separately
       cumulativeCapital: 0,
       cumulativeBDMAUM: 0, 
       cumulativeFounderFunding: 0, 
@@ -179,10 +178,9 @@ window.FundModel.runModel = function(assumptions, capitalInputs, returnMult, bdm
     // Other personnel
     const eaActive = m >= assumptions.eaStartMonth;
     const eaSalaryCost = eaActive ? eaSalary : 0;
-    // FIXED: Chairman is Adrian - quarterly £5K only (no separate adrianSalary)
+    // Chairman - quarterly payment only (Adrian IS the Chairman)
     const chairmanActive = m >= assumptions.chairmanStartMonth && ((m - assumptions.chairmanStartMonth) % 3 === 0);
     const chairmanCost = chairmanActive ? assumptions.chairmanSalary : 0;
-    // REMOVED: adrianSalary - Adrian IS the Chairman, paid quarterly ONLY
     
     const totalCashSalaries = ianCashExpense + paulCashExpense + lewisSalary + eaSalaryCost + chairmanCost;
     const totalSalaries = ianSalaryAmount + paulSalaryAmount + lewisSalary + eaSalaryCost + chairmanCost;
@@ -249,7 +247,9 @@ window.FundModel.runModel = function(assumptions, capitalInputs, returnMult, bdm
       if (breakEvenMonth === null && rollingEBITDA.every(e => e > 0) && m >= 2) breakEvenMonth = m;
     }
     
-    // CRITICAL: Cash flow logic
+    // ========================================================================
+    // CRITICAL FIX v10.20: Cash flow logic with CORRECT M0 starting point
+    // ========================================================================
     let closingCash;
     let founderFundingRequired = 0;
     
@@ -259,13 +259,14 @@ window.FundModel.runModel = function(assumptions, capitalInputs, returnMult, bdm
       preLaunchExpenses += totalExpenses;
       shareholderLoanBalance = prev.shareholderLoanBalance + ianAccrual + paulAccrual + marketingAccrual + travelAccrual;
     } else {
-      // Post-launch: Normal cash flow, M0 starts at $367K
+      // Post-launch cash flow calculation
+      // CRITICAL FIX: M0 starts at Stone Park pot ($367K), NOT at prev.closingCash (which is 0 from M-1)
+      const openingCash = (m === 0) ? startingCashUSD : prev.closingCash;
       const netCashFlow = ebitda;
-      closingCash = prev.closingCash + netCashFlow;
+      closingCash = openingCash + netCashFlow;
       
-      // CRITICAL FIX (BUG-101): Track DELTA of deficit, not absolute value
-      // This month's additional funding need is only what's NEW
-      const prevDeficit = prev.closingCash < 0 ? Math.abs(prev.closingCash) : 0;
+      // Track founder funding: delta of deficit (what's NEW this month)
+      const prevDeficit = (m === 0 || prev.closingCash >= 0) ? 0 : Math.abs(prev.closingCash);
       const currDeficit = closingCash < 0 ? Math.abs(closingCash) : 0;
       founderFundingRequired = currDeficit > prevDeficit ? currDeficit - prevDeficit : 0;
       
@@ -273,7 +274,7 @@ window.FundModel.runModel = function(assumptions, capitalInputs, returnMult, bdm
       shareholderLoanBalance = prev.shareholderLoanBalance + ianAccrual + paulAccrual + marketingAccrual + travelAccrual;
     }
     
-    // FIXED: Cumulative founder funding now accumulates correctly
+    // Cumulative founder funding accumulates correctly
     cumulativeFounderFunding = prev.cumulativeFounderFunding + founderFundingRequired;
     
     if (isPreLaunch) {
