@@ -1,5 +1,5 @@
 // ui/Dashboard.js - Summary KPI cards, Cash Flow, and KPI Table
-// v10.13: Added validation status indicator (green checkmark / red warning)
+// v10.14: Fixed cash reconciliation to include founder funding
 
 window.FundModel = window.FundModel || {};
 
@@ -65,7 +65,7 @@ window.FundModel.Dashboard = function Dashboard({ model, scenarioName, onResetSc
         <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
           <div className="text-center"><p className="text-xs text-purple-600 uppercase">Total Carry (24M)</p><p className="text-2xl font-bold text-purple-700">{fmt(totalCarry)}</p></div>
           <div className="text-center"><p className="text-xs text-purple-600 uppercase">Unrealized Carry Value</p><p className="text-2xl font-bold text-purple-700">{fmt(lastMonth.closingAUM ? lastMonth.closingAUM * 0.175 : 0)}</p></div>
-          <div className="text-center"><p className="text-xs text-purple-600 uppercase">Ian Accrued Salary</p><p className="text-2xl font-bold text-purple-700">{fmt(lastMonth.shareholderLoanBalance || 0)}</p></div>
+          <div className="text-center"><p className="text-xs text-purple-600 uppercase">Shareholder Loan Balance</p><p className="text-2xl font-bold text-purple-700">{fmt(lastMonth.shareholderLoanBalance || 0)}</p></div>
         </div>
       </div>
       
@@ -89,9 +89,11 @@ function calculateValidationStatus(postLaunch, startingCash) {
     const aumVariance = Math.abs((m.closingAUM || 0) - ((m.openingAUM || 0) + (m.netCapital || 0) + (m.investmentGain || 0)));
     if (aumVariance > 1) aumOk = false;
     
-    // Cash check: Previous Closing + Net Cash Flow = Current Closing
+    // Cash check: Previous Closing + Net Cash Flow + Founder Funding = Current Closing
     const prevCash = idx > 0 ? (postLaunch[idx - 1].closingCash || 0) : startingCash;
-    const cashVariance = Math.abs((m.closingCash || 0) - (prevCash + (m.netCashFlow || 0)));
+    const founderFunding = m.founderFundingRequired || 0;
+    const expectedCash = prevCash + (m.netCashFlow || 0) + founderFunding;
+    const cashVariance = Math.abs((m.closingCash || 0) - expectedCash);
     if (cashVariance > 1) cashOk = false;
     
     // Share class check: Sum of classes = Total AUM
