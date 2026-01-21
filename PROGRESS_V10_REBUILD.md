@@ -1,7 +1,7 @@
 # PROGRESS: v10 Rebuild
 
 **Last Updated**: January 21, 2026
-**Current Version**: v10.0-beta
+**Current Version**: v10.0
 **Target Version**: v10.0
 
 ## Repository
@@ -24,16 +24,15 @@ https://ianhigginsep.github.io/emergence-fund-model-v9/
 - [x] Adrian: Change to $20K/year ($1,667/mo) - in assumptions.js
 - [x] Verify personnel costs in Cash Flow Statement - added collapsible breakdown
 
-### Batch 6: Marketing & Travel Roll-Up
+### Batch 6: Marketing & Travel Roll-Up ✅ COMPLETE
 - [x] Add toggle for marketing roll-up to SL - DONE in assumptions.js
 - [x] Add toggle for travel roll-up to SL - DONE in assumptions.js
 - [x] Update amounts: $1.5-2K pre-BE, $3K post-BE - DONE
-- **STATUS: COMPLETE (done during earlier config updates)**
 
-### Batch 7: Shareholder Loan Display
+### Batch 7: Shareholder Loan Display ✅ COMPLETE
 - [x] Add Paul $100K to initial balance - DONE in assumptions.js
-- [ ] Display as rolling balance sheet item - shows in Cash Flow, needs Balance Sheet tab
-- [ ] Remove any repayment logic (just accumulation)
+- [x] Display as rolling balance sheet item - BalanceSheet.js created
+- [x] Verify no repayment logic (just accumulation) - confirmed in engine.js
 
 ### Batch 8: US Feeder Fund
 - [ ] Add as one-time configurable expense
@@ -87,6 +86,19 @@ https://ianhigginsep.github.io/emergence-fund-model-v9/
 
 ## COMPLETED BATCHES
 
+### Batch 7 (Jan 21, 2026)
+- Created ui/BalanceSheet.js with:
+  - Initial items breakdown table (from SHAREHOLDER_LOAN.initialItems)
+  - Summary KPI cards (Initial, Accumulated, Current balance)
+  - Rolling monthly SL balance display (24 months)
+  - Monthly accrual rows (Ian, Paul, Marketing, Travel)
+  - Structure notes (interest from Year 3, repayment from Year 3)
+- Updated index.html:
+  - Added Balance Sheet tab to navigation
+  - Added script tag for BalanceSheet.js
+  - Bumped version to v10.0
+- Verified engine.js: No repayment logic exists - pure accumulation ✓
+
 ### Batch 5 (Jan 21, 2026)
 - Lewis adjustment toggle implemented in engine.js (reads lewisAdjustmentMonth, lewisAdjustedSalary)
 - Adrian confirmed at $1,667/mo ($20K/year)
@@ -109,6 +121,13 @@ https://ianhigginsep.github.io/emergence-fund-model-v9/
 
 ## SESSION LOG
 
+### Session: January 21, 2026 (latest)
+- Batch 7 COMPLETE
+- Created BalanceSheet.js (113 lines)
+- Added Balance Sheet tab to index.html
+- Verified no repayment logic in engine.js
+- SL balance accumulates: initial + ianAccrual + paulAccrual + marketingAccrual + travelAccrual
+
 ### Session: January 21, 2026 (continued)
 - Batch 5 COMPLETE
 - Tables.js updated with personnel breakdown (collapsible)
@@ -124,9 +143,9 @@ https://ianhigginsep.github.io/emergence-fund-model-v9/
 
 ---
 
-## NEXT BATCH: Batch 7 (remaining tasks)
+## NEXT BATCH: Batch 8 (US Feeder Fund)
 
 Tasks:
-1. Create Balance Sheet tab to display Shareholder Loan balance
-2. Verify no repayment logic exists (accumulation only)
-3. Test SL balance accumulates with rolled-up salaries
+1. Add US Feeder Fund as configurable one-time expense
+2. Add month selector for when expense occurs
+3. Add GP/LP toggle (who bears the cost)
