@@ -1,26 +1,24 @@
 // ui/JCurve.js - Cash Position J-Curve
-// Shows actual cash balance from M0 ($367K Stone Park start)
-// Trough = maximum utilization of Stone Park funds
-// v10.17: Fixed to show cash position, NOT cumulative P&L
+// v10.19: FIXED confusing "Max Utilization" display
+// Now shows: Starting Pot, Max Draw on Pot, Additional Funding Needed
 
 window.FundModel = window.FundModel || {};
 
 window.FundModel.JCurveChart = function JCurveChart({ model }) {
   const { formatCurrency } = window.FundModel;
-  const { months, breakEvenMonth, startingCashUSD } = model;
+  const { months, breakEvenMonth, startingCashUSD, cumulativeFounderFunding } = model;
   const fmt = formatCurrency;
   
   // Filter to post-launch months only (M0+)
   const postLaunchMonths = months.filter(m => m.month >= 0);
   
-  // Use actual closing cash balance (already calculated in engine)
+  // Use actual closing cash balance
   const cashData = postLaunchMonths.map(m => ({
     month: m.month,
     value: m.closingCash,
     label: m.label
   }));
   
-  // Starting cash reference line
   const startingCash = startingCashUSD || 367000;
   
   const values = cashData.map(d => d.value);
@@ -38,17 +36,22 @@ window.FundModel.JCurveChart = function JCurveChart({ model }) {
   const zeroY = scaleY(0);
   const startingY = scaleY(startingCash);
   
-  // Build path
   const path = cashData.map((d, i) => 
     `${i === 0 ? 'M' : 'L'}${scaleX(i)},${scaleY(d.value)}`
   ).join(' ');
   
-  // Find trough (lowest cash point) = maximum utilization
+  // Find trough (lowest cash point)
   const trough = cashData.reduce((min, d) => d.value < min.value ? d : min, cashData[0]);
   const troughIdx = cashData.findIndex(d => d === trough);
-  const maxUtilization = startingCash - trough.value;
   
-  // Find recovery point (when cash first exceeds starting cash)
+  // CLEAR METRICS - no more confusing "Max Utilization"
+  // If trough is negative, the entire starting pot was used plus extra funding needed
+  // If trough is positive, only part of starting pot was used
+  const lowestCash = trough.value;
+  const maxDrawOnPot = lowestCash >= 0 ? startingCash - lowestCash : startingCash;
+  const additionalFundingNeeded = lowestCash < 0 ? Math.abs(lowestCash) : 0;
+  
+  // Find recovery point
   const recoveryMonth = cashData.find(d => d.value >= startingCash);
   const recoveryIdx = recoveryMonth ? cashData.findIndex(d => d === recoveryMonth) : null;
   
@@ -92,7 +95,7 @@ window.FundModel.JCurveChart = function JCurveChart({ model }) {
           textAnchor="middle" className="text-xs fill-gray-400">Cash Balance ($)</text>
         <text x={chartW / 2} y={chartH - 2} textAnchor="middle" className="text-xs fill-gray-400">Month</text>
         
-        {/* Gradient fill - green above start, amber between 0 and start, red below 0 */}
+        {/* Gradient fill */}
         <defs>
           <linearGradient id="cashGrad" x1="0" y1="0" x2="0" y2="1">
             <stop offset="0%" stopColor="#22c55e" stopOpacity="0.2" />
@@ -107,7 +110,7 @@ window.FundModel.JCurveChart = function JCurveChart({ model }) {
         {/* Main curve */}
         <path d={path} fill="none" stroke="#3b82f6" strokeWidth="2.5" />
         
-        {/* Trough marker (max utilization) */}
+        {/* Trough marker */}
         <circle cx={scaleX(troughIdx)} cy={scaleY(trough.value)} r="6" fill="#f59e0b" stroke="#fff" strokeWidth="2" />
         <text x={scaleX(troughIdx)} y={scaleY(trough.value) + 20} textAnchor="middle" 
           className="text-xs fill-amber-600 font-semibold">Trough: {fmt(trough.value)}</text>
@@ -127,24 +130,31 @@ window.FundModel.JCurveChart = function JCurveChart({ model }) {
           r="5" fill="#22c55e" />
       </svg>
       
+      {/* FIXED: Clear metrics that don't confuse */}
       <div className="grid grid-cols-4 gap-3 mt-3 text-center text-sm">
         <div className="bg-blue-50 rounded p-2 border border-blue-200">
-          <p className="text-xs text-blue-600 uppercase">Starting Cash (M0)</p>
+          <p className="text-xs text-blue-600 uppercase">Starting Pot</p>
           <p className="font-bold text-blue-700">{fmt(startingCash)}</p>
         </div>
         <div className="bg-amber-50 rounded p-2 border border-amber-200">
-          <p className="text-xs text-amber-600 uppercase">Trough (M{troughIdx})</p>
-          <p className="font-bold text-amber-700">{fmt(trough.value)}</p>
+          <p className="text-xs text-amber-600 uppercase">Lowest Point (M{troughIdx})</p>
+          <p className="font-bold text-amber-700">{fmt(lowestCash)}</p>
         </div>
         <div className="bg-red-50 rounded p-2 border border-red-200">
-          <p className="text-xs text-red-600 uppercase">Max Utilization</p>
-          <p className="font-bold text-red-700">{fmt(maxUtilization)}</p>
+          <p className="text-xs text-red-600 uppercase">Add'l Funding Needed</p>
+          <p className="font-bold text-red-700">{additionalFundingNeeded > 0 ? fmt(additionalFundingNeeded) : '$0'}</p>
         </div>
         <div className="bg-green-50 rounded p-2 border border-green-200">
           <p className="text-xs text-green-600 uppercase">Final (M35)</p>
           <p className="font-bold text-green-700">{fmt(cashData[cashData.length-1]?.value || 0)}</p>
         </div>
       </div>
+      
+      {additionalFundingNeeded > 0 && (
+        <div className="mt-2 p-2 bg-amber-50 rounded border border-amber-200 text-xs text-amber-700 text-center">
+          📊 Cash goes negative by {fmt(additionalFundingNeeded)} at M{troughIdx} — founders must inject capital
+        </div>
+      )}
       
       <div className="mt-2 text-xs text-gray-500 text-center">
         Pre-launch costs (~$126K) are tracked separately as Shareholder Loan — not shown here
