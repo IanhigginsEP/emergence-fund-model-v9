@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Emergence Partners Fund P&L Model v10.16</title>
+  <title>Emergence Partners Fund P&L Model v10.19</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js"></script>
@@ -112,7 +112,7 @@
             <div className="flex justify-between items-center">
               <div>
                 <h1 className="text-2xl font-bold text-gray-800">
-                  Emergence Partners Fund Model <span className="text-green-600">v10.16</span>
+                  Emergence Partners Fund Model <span className="text-green-600">v10.19</span>
                   <span className="ml-2 text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded">LP-READY</span>
                   <span className="ml-2 text-xs bg-purple-100 text-purple-700 px-2 py-1 rounded">SHARE CLASSES</span>
                 </h1>
@@ -180,7 +180,7 @@
           {tab === 'charts' && (
             <div className="space-y-4">
               <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg p-3 mb-4">
-                <p className="text-sm text-gray-600">📈 <strong>LP-Ready Visualizations</strong> — J-Curve, Revenue & Expense waterfalls</p>
+                <p className="text-sm text-gray-600">📈 <strong>LP-Ready Visualizations</strong> — J-Curve, Revenue & Expense waterfalls, AUM by Source</p>
               </div>
               {FM.JCurveChart && <FM.JCurveChart model={model} />}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -188,6 +188,7 @@
                 {FM.ExpenseWaterfall && <FM.ExpenseWaterfall model={model} />}
               </div>
               {FM.AUMChart && <FM.AUMChart model={model} />}
+              {FM.AUMBySourceChart && <FM.AUMBySourceChart model={model} />}
               {FM.CashChart && <FM.CashChart model={model} />}
               {FM.FounderFundingChart && <FM.FounderFundingChart model={model} />}
               {FM.Waterfall && <FM.Waterfall model={model} />}
