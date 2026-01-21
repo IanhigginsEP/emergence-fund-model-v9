@@ -1,5 +1,5 @@
 // model/engine.js - Core P&L calculation loop
-// v10.13: Fix M0 cash - founders inject at launch to restore starting pot
+// v10.14: Fix marketing/travel defaults to $2000, add BDM trailing commission
 
 window.FundModel = window.FundModel || {};
 
@@ -44,9 +44,11 @@ window.FundModel.runModel = function(assumptions, capitalInputs, returnMult, bdm
   const usFeederAmount = assumptions.usFeederAmount || 30000;
   const usFeederIsGpExpense = assumptions.usFeederIsGpExpense !== false;
   
-  // BDM settings
+  // BDM settings with trailing commission
   const bdmStartMonth = assumptions.bdmStartMonth || 7;
   const bdmRetainer = assumptions.bdmRetainer || 0;
+  const bdmTrailingMonths = assumptions.bdmTrailingMonths || 12;
+  const bdmCommRate = assumptions.bdmCommissionRate || 0;
   
   // Broker trailing commission settings
   const brokerStartMonth = assumptions.brokerStartMonth || 3;
@@ -54,8 +56,9 @@ window.FundModel.runModel = function(assumptions, capitalInputs, returnMult, bdm
   const brokerCommRate = assumptions.brokerCommissionRate || 0.01;
   const brokerTrailingMonths = assumptions.brokerTrailingMonths || 12;
   
-  // Track broker raises for trailing commission calculation
+  // Track raises for trailing commission calculation
   const brokerRaiseHistory = [];
+  const bdmRaiseHistory = [];
   
   const months = [];
   let breakEvenMonth = null;
@@ -83,6 +86,7 @@ window.FundModel.runModel = function(assumptions, capitalInputs, returnMult, bdm
     const brokerRaise = isPreLaunch ? 0 : inp.brokerRaise;
     
     if (brokerRaise > 0) brokerRaiseHistory.push({ month: m, amount: brokerRaise });
+    if (bdmRaise > 0) bdmRaiseHistory.push({ month: m, amount: bdmRaise });
     
     const lpCapital = gpOrganic + bdmRaise + brokerRaise;
     const gpCommitment = lpCapital * gpCommitRate;
@@ -109,20 +113,19 @@ window.FundModel.runModel = function(assumptions, capitalInputs, returnMult, bdm
       : gpCommitRate / (1 + gpCommitRate);
     const classAPct = 1 - founderPct;
     
-    // AUM by share class (based on closingAUM for proper reconciliation)
+    // AUM by share class
     const founderAUM = closingAUM * founderPct;
     const classAAUM = closingAUM * classAPct;
     
-    // Management fee by share class (Founder = 0%, Class A = 1.5%)
-    const founderMgmtFee = 0; // Founder class has no management fee
+    // Management fee by share class
+    const founderMgmtFee = 0;
     const classAMgmtFeeRate = shareClasses.classA?.mgmtFeeRate || 0.015;
     const classAMgmtFee = isPreLaunch ? 0 : classAAUM * (classAMgmtFeeRate / 12);
     const grossMgmtFee = founderMgmtFee + classAMgmtFee;
     
-    // Weighted average fee rate for reporting
     const weightedMgmtRate = closingAUM > 0 ? (grossMgmtFee * 12) / closingAUM : 0;
     
-    // Carry by share class (Founder = 0%, Class A = 17.5%)
+    // Carry by share class
     const founderCarryRate = shareClasses.founder?.carryRate || 0;
     const classACarryRate = shareClasses.classA?.carryRate || 0.175;
     const privateWeight = 1 - assumptions.publicWeight;
@@ -145,7 +148,8 @@ window.FundModel.runModel = function(assumptions, capitalInputs, returnMult, bdm
     const ianAccrual = ianShouldRollUp ? ianSalaryAmount : 0;
     
     const paulSalaryAmount = isPostBreakeven ? assumptions.paulSalaryPost : assumptions.paulSalaryPre;
-    const paulShouldRollUp = window.FundModel.shouldRollUp(paulRollUpMode, paulRollUpEndMonth, m, breakEvenMonth);
+    const paulCashDraw = assumptions.paulCashDrawEnabled !== false;
+    const paulShouldRollUp = !paulCashDraw && window.FundModel.shouldRollUp(paulRollUpMode, paulRollUpEndMonth, m, breakEvenMonth);
     const paulCashExpense = paulShouldRollUp ? 0 : paulSalaryAmount;
     const paulAccrual = paulShouldRollUp ? paulSalaryAmount : 0;
     
@@ -171,12 +175,12 @@ window.FundModel.runModel = function(assumptions, capitalInputs, returnMult, bdm
     const totalCashSalaries = ianCashExpense + paulCashExpense + lewisSalary + eaSalaryCost + chairmanCost + adrianSalary;
     const totalSalaries = ianSalaryAmount + paulSalaryAmount + lewisSalary + eaSalaryCost + chairmanCost + adrianSalary;
     
-    // OpEx (with roll-up toggles)
-    const marketingAmount = isPostBreakeven ? (assumptions.marketingPostBE || 3000) : (assumptions.marketingPreBE || 1500);
+    // OpEx - FIXED: defaults now $2000
+    const marketingAmount = isPostBreakeven ? (assumptions.marketingPostBE || 2000) : (assumptions.marketingPreBE || 2000);
     const marketingCash = marketingRollUp ? 0 : marketingAmount;
     const marketingAccrual = marketingRollUp ? marketingAmount : 0;
     
-    const travelAmount = isPostBreakeven ? (assumptions.travelPostBE || 3000) : (assumptions.travelPreBE || 1500);
+    const travelAmount = isPostBreakeven ? (assumptions.travelPostBE || 2000) : (assumptions.travelPreBE || 2000);
     const travelCash = travelRollUp ? 0 : travelAmount;
     const travelAccrual = travelRollUp ? travelAmount : 0;
     
@@ -191,10 +195,19 @@ window.FundModel.runModel = function(assumptions, capitalInputs, returnMult, bdm
       else usFeederLpExpense = usFeederAmount;
     }
     
-    // BDM & Broker expenses
+    // BDM expenses with trailing commission
     const bdmRetainerExpense = (!isPreLaunch && m >= bdmStartMonth) ? bdmRetainer : 0;
-    const brokerRetainerExpense = (!isPreLaunch && m >= brokerStartMonth) ? brokerRetainer : 0;
+    let bdmTrailingComm = 0;
+    if (!isPreLaunch && bdmCommRate > 0) {
+      bdmRaiseHistory.forEach(raise => {
+        if (m >= raise.month && m < raise.month + bdmTrailingMonths) {
+          bdmTrailingComm += raise.amount * bdmCommRate / 12;
+        }
+      });
+    }
     
+    // Broker expenses with trailing commission
+    const brokerRetainerExpense = (!isPreLaunch && m >= brokerStartMonth) ? brokerRetainer : 0;
     let brokerTrailingComm = 0;
     if (!isPreLaunch) {
       brokerRaiseHistory.forEach(raise => {
@@ -205,13 +218,13 @@ window.FundModel.runModel = function(assumptions, capitalInputs, returnMult, bdm
     }
     
     const totalBrokerExpense = brokerRetainerExpense + brokerTrailingComm;
-    const totalBdmExpense = bdmRetainerExpense + bdmFeeShare;
+    const totalBdmExpense = bdmRetainerExpense + bdmFeeShare + bdmTrailingComm;
     
     const totalOpexCash = officeIT + marketingCash + travelCash + compliance + setupCost + usFeederExpense;
     const totalOpex = officeIT + marketingAmount + travelAmount + compliance + setupCost + usFeederExpense;
     
-    const totalCashExpenses = totalCashSalaries + totalOpexCash + totalBrokerExpense + bdmRetainerExpense;
-    const totalExpenses = totalSalaries + totalOpex + totalBrokerExpense + bdmRetainerExpense;
+    const totalCashExpenses = totalCashSalaries + totalOpexCash + totalBrokerExpense + bdmRetainerExpense + bdmTrailingComm;
+    const totalExpenses = totalSalaries + totalOpex + totalBrokerExpense + bdmRetainerExpense + bdmTrailingComm;
     
     // EBITDA & EBT
     const ebitda = operatingRevenue - totalCashExpenses;
@@ -256,7 +269,6 @@ window.FundModel.runModel = function(assumptions, capitalInputs, returnMult, bdm
       month: m, label: 'M'+m, isPreLaunch, isPostBreakeven, openingAUM, gpOrganic, bdmRaise, brokerRaise,
       lpCapital, gpCommitment, newCapital, redemption, netCapital, investmentGain, closingAUM, cumulativeCapital,
       cumulativeBDMAUM, cumulativeGPCommit, cumulativeLPCapital, bdmAUMProportion,
-      // Share class breakdown
       shareClasses: {
         founder: { aum: founderAUM, pct: founderPct, mgmtFee: founderMgmtFee, carryRate: founderCarryRate },
         classA: { aum: classAAUM, pct: classAPct, mgmtFee: classAMgmtFee, carryRate: classACarryRate },
@@ -272,7 +284,7 @@ window.FundModel.runModel = function(assumptions, capitalInputs, returnMult, bdm
       officeIT, marketing: marketingAmount, marketingCash, marketingAccrual, 
       travel: travelAmount, travelCash, travelAccrual, compliance, setupCost,
       usFeederExpense, usFeederLpExpense,
-      bdmRetainerExpense, bdmFeeShare: bdmFeeShare, totalBdmExpense,
+      bdmRetainerExpense, bdmTrailingComm, bdmFeeShare: bdmFeeShare, totalBdmExpense,
       brokerRetainerExpense, brokerTrailingComm, totalBrokerExpense,
       totalOpex, totalOpexCash, totalCashExpenses, totalExpenses, ebitda, ebt, netIncome, netCashFlow,
       closingCash: adjustedClosingCash, founderFundingRequired, cumulativeFounderFunding, shareholderLoanBalance,
