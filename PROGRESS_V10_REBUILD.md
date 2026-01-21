@@ -19,19 +19,20 @@ https://ianhigginsep.github.io/emergence-fund-model-v9/
 - [x] Add Paul toggle (same structure)
 - [x] Update engine.js to read toggle dates
 
-### Batch 5: Lewis & Adrian Corrections (IN PROGRESS)
-- [ ] Lewis: Add adjustment toggle (new amount at specified month)
-- [ ] Adrian: Change to $20K/year ($1,667/mo) ← DONE in assumptions.js
-- [ ] Verify personnel costs in Cash Flow Statement
+### Batch 5: Lewis & Adrian Corrections ✅ COMPLETE
+- [x] Lewis: Add adjustment toggle (new amount at specified month) - in engine.js
+- [x] Adrian: Change to $20K/year ($1,667/mo) - in assumptions.js
+- [x] Verify personnel costs in Cash Flow Statement - added collapsible breakdown
 
 ### Batch 6: Marketing & Travel Roll-Up
-- [ ] Add toggle for marketing roll-up to SL
-- [ ] Add toggle for travel roll-up to SL
-- [ ] Update amounts: $1.5-2K pre-BE, $3K post-BE
+- [x] Add toggle for marketing roll-up to SL - DONE in assumptions.js
+- [x] Add toggle for travel roll-up to SL - DONE in assumptions.js
+- [x] Update amounts: $1.5-2K pre-BE, $3K post-BE - DONE
+- **STATUS: COMPLETE (done during earlier config updates)**
 
 ### Batch 7: Shareholder Loan Display
-- [ ] Add Paul $100K to initial balance ← DONE in assumptions.js
-- [ ] Display as rolling balance sheet item
+- [x] Add Paul $100K to initial balance - DONE in assumptions.js
+- [ ] Display as rolling balance sheet item - shows in Cash Flow, needs Balance Sheet tab
 - [ ] Remove any repayment logic (just accumulation)
 
 ### Batch 8: US Feeder Fund
@@ -50,10 +51,11 @@ https://ianhigginsep.github.io/emergence-fund-model-v9/
 - [ ] Start month configurability for each
 
 ### Batch 11: Share Class Integration
-- [ ] Founder Class: 0% mgmt fee, 0% perf fee
-- [ ] Class A: 1.5% mgmt fee, 17.5% perf fee
-- [ ] Class B: 1.5% mgmt fee, 17.5% perf fee
-- [ ] Class C: 1.5% mgmt fee, 17.5% perf fee
+- [x] Founder Class: 0% mgmt fee, 0% perf fee - DONE in assumptions.js
+- [x] Class A: 1.5% mgmt fee, 17.5% perf fee - DONE
+- [x] Class B: 1.5% mgmt fee, 17.5% perf fee - DONE
+- [x] Class C: 1.5% mgmt fee, 17.5% perf fee - DONE
+- **STATUS: Config done, engine integration needed**
 
 ### Batch 12: Validation & Reconciliation
 - [ ] Add cash flow reconciliation check
@@ -85,6 +87,14 @@ https://ianhigginsep.github.io/emergence-fund-model-v9/
 
 ## COMPLETED BATCHES
 
+### Batch 5 (Jan 21, 2026)
+- Lewis adjustment toggle implemented in engine.js (reads lewisAdjustmentMonth, lewisAdjustedSalary)
+- Adrian confirmed at $1,667/mo ($20K/year)
+- CashflowStatement in Tables.js now has collapsible personnel breakdown:
+  - Ian (cash), Paul (cash), Lewis, Emma, Adrian, Chairman
+  - Marketing, Travel, Office/IT, Compliance, Broker Comm
+  - Shows accruals below the line (Ian, Paul, Marketing, Travel)
+
 ### Batch 4 (Jan 21, 2026)
 - Added founder salary toggle modes: 'untilBreakeven' | 'untilMonth' | 'always' | 'never'
 - Ian and Paul both configurable with rollUpMode and rollUpEndMonth
@@ -99,9 +109,24 @@ https://ianhigginsep.github.io/emergence-fund-model-v9/
 
 ## SESSION LOG
 
+### Session: January 21, 2026 (continued)
+- Batch 5 COMPLETE
+- Tables.js updated with personnel breakdown (collapsible)
+- Shows all salary line items for verification
+- Paul salary accrual now shows below the line
+
 ### Session: January 21, 2026
 - Created PROGRESS_V10_REBUILD.md
 - Batch 4 COMPLETE: Founder salary toggles
 - assumptions.js updated with rollUpMode config for Ian/Paul
 - engine.js updated with shouldRollUp() helper function
 - Also made progress on Batches 5, 6, 7, 11 via config updates
+
+---
+
+## NEXT BATCH: Batch 7 (remaining tasks)
+
+Tasks:
+1. Create Balance Sheet tab to display Shareholder Loan balance
+2. Verify no repayment logic exists (accumulation only)
+3. Test SL balance accumulates with rolled-up salaries
