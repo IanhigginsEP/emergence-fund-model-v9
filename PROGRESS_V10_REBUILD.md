@@ -1,7 +1,7 @@
 # PROGRESS: v10 Rebuild
 
 **Last Updated**: January 21, 2026
-**Current Version**: v10.9
+**Current Version**: v10.10
 **Target Version**: v10.0+
 
 ## Repository
@@ -44,22 +44,31 @@ https://ianhigginsep.github.io/emergence-fund-model-v9/
 - [x] Implement trailing commission calculation
 - [x] Add to Cash Flow Statement as expense line
 
-### Batch 10: Capital Raising Tab
-- [ ] Create dedicated tab for capital inputs
-- [ ] GP Organic, BDM, Broker raise inputs
-- [ ] Start month configurability for each
+### Batch 10: Capital Raising Tab ✅ COMPLETE
+- [x] Create dedicated tab for capital inputs
+- [x] GP Organic, BDM, Broker raise inputs
+- [x] Start month configurability for each
 
 ### Batch 11: Share Class Integration
-- [x] Founder Class: 0% mgmt fee, 0% perf fee
-- [x] Class A: 1.5% mgmt fee, 17.5% perf fee
-- [x] Class B: 1.5% mgmt fee, 17.5% perf fee
-- [x] Class C: 1.5% mgmt fee, 17.5% perf fee
-- **STATUS: Config done, engine integration needed**
+- [x] Founder Class: 0% mgmt fee, 0% perf fee (config done)
+- [x] Class A: 1.5% mgmt fee, 17.5% perf fee (config done)
+- [x] Class B: 1.5% mgmt fee, 17.5% perf fee (config done)
+- [x] Class C: 1.5% mgmt fee, 17.5% perf fee (config done)
+- [ ] **ENGINE INTEGRATION NEEDED**: Apply share class fees to revenue calculations
 
 ### Batch 12: Validation & Reconciliation
 - [ ] Add cash flow reconciliation check
 - [ ] Add AUM reconciliation row
 - [ ] Fix any discrepancies
+
+---
+
+## REMAINING BATCHES: 2
+
+| Batch | Description | Status |
+|-------|-------------|--------|
+| **Batch 11** | Share Class Integration | Engine work needed |
+| **Batch 12** | Validation & Reconciliation | Not started |
 
 ---
 
@@ -70,29 +79,38 @@ https://ianhigginsep.github.io/emergence-fund-model-v9/
 | Pre-launch months | 12 | 12 (Mar 2025 - Feb 2026) |
 | Projection months | 36 | 36 |
 | Starting cash (M0) | $367K | $367K |
-| Breakeven | OUTPUT | OUTPUT (not forced) |
+| Breakeven | M5 | ~M5 |
+| Founder Funding | $182K | ~$182K |
+| Y3 AUM | $140.58M | ~$140M |
 
 ---
 
 ## COMPLETED BATCHES
 
+### Batch 10 (Jan 21, 2026)
+- Created ui/CapitalTab.js with full capital configuration
+- Files modified:
+  - ui/CapitalTab.js: NEW - dedicated capital raising UI
+    - Summary cards: GP Organic, BDM, Broker, Redemptions, Net
+    - GP Organic config: M0-M3, M4-M11, M12+ amounts
+    - BDM config: Start month, monthly amount
+    - Broker config: Start month, monthly amount
+    - Capital schedule table (Year 1 view)
+    - Redemption schedule display
+  - config/capital.js: Updated to read from assumptions
+    - gpOrganicM0to3, gpOrganicM4to11, gpOrganicM12plus
+    - bdmCapitalStartMonth, bdmMonthlyCapital
+    - brokerCapitalStartMonth, brokerMonthlyCapital
+  - config/assumptions.js: Added capital config fields
+  - index.html: Added Capital tab to navigation
+
 ### Batch 9 (Jan 21, 2026)
 - Added BDM & Broker fee structure configuration
 - Files modified:
   - ui/Controls.js: Added "BDM Economics" and "Broker Economics" sections
-    - BDM: Start month, retainer, rev share %
-    - Broker: Start month, retainer, commission rate, trailing months
   - model/engine.js: Implemented trailing commission calculation
-    - Broker raises tracked in history array
-    - Commission applied for N months after each raise
-    - BDM retainer tracked as monthly expense
-    - BDM fee share calculated on proportion of BDM-raised AUM
   - ui/Tables.js: Added distinct expense lines in Cash Flow Statement
-    - BDM Costs section: Retainer + Rev Share
-    - Broker Costs section: Retainer + Trailing Commission
   - config/assumptions.js: Added BDM/Broker fields to DEFAULT_ASSUMPTIONS
-    - bdmStartMonth, bdmRetainer, bdmRevSharePct
-    - brokerStartMonth, brokerRetainer, brokerCommissionRate, brokerTrailingMonths
 
 ### Batch 8 (Jan 21, 2026)
 - Added US Feeder Fund as configurable one-time expense
@@ -112,46 +130,30 @@ https://ianhigginsep.github.io/emergence-fund-model-v9/
 
 ---
 
-## SESSION LOG
+## NEXT BATCH: Batch 11 (Share Class Integration)
 
-### Session: January 21, 2026 (Batch 9)
-- Batch 9 COMPLETE
-- BDM Economics:
-  - Configurable start month (default M7)
-  - Monthly retainer option (default $0)
-  - Revenue share % of mgmt fee on BDM-raised AUM
-- Broker Economics:
-  - Configurable start month (default M3)
-  - Monthly retainer option (default $0)
-  - Trailing commission rate (default 1%)
-  - Trailing months (default 12)
-  - Commission calculated as: raise amount × rate / 12 per month
-- Cash Flow Statement shows:
-  - BDM Costs (retainer + rev share)
-  - Broker Costs (retainer + trailing commission)
-
----
-
-## NEXT BATCH: Batch 10 (Capital Raising Tab)
+**Status**: Config exists in config/share-classes.js, engine integration needed
 
 Tasks:
-1. Create dedicated Capital tab in navigation
-2. Add GP Organic raise configuration:
-   - Amount per month (Y1 vs Y2-3)
-   - Start month
-3. Add BDM raise configuration:
-   - Monthly amount
-   - Start month
-4. Add Broker raise configuration:
-   - Monthly amount
-   - Start month
-5. Wire inputs to capital generation
+1. Integrate share class definitions into engine.js revenue calculation
+2. Track AUM by share class (or weighted approach)
+3. Apply correct mgmt fee rate per class
+4. Apply correct carry rate per class
+5. Display per-class breakdown in Dashboard or dedicated tab
 
 Files to modify:
-- index.html — add Capital tab
-- Create ui/CapitalTab.js — dedicated capital config UI
-- model/capital.js — capital generation logic (if not exists)
+- model/engine.js — apply share class fees to revenue
+- ui/Dashboard.js or new ui/ShareClasses.js — display breakdown
+- Potentially config/share-classes.js — verify structure
+
+Share Class Reference (from PPM):
+| Class | Mgmt Fee | Carry | Public Weight |
+|-------|----------|-------|---------------|
+| Founder | 0% | 0% | 60% |
+| Class A | 1.5% | 17.5% | 60% |
+| Class B | 1.5% | 17.5% | 0% (private) |
+| Class C | 1.5% | 17.5% | 100% (public) |
 
 Validation:
-- Total 36-month capital should match current baseline
-- Changes to start months should affect capital timing correctly
+- Founder class AUM should generate $0 mgmt fee
+- Weighted average fee should match current model (if all Class A)
