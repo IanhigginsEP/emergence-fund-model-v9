@@ -1,5 +1,5 @@
-// ui/Controls.js - Input controls v10.13
-// Fixed: Lewis label, BDM toggle, marketing/travel fields
+// ui/Controls.js - Input controls v10.14
+// Fixed: BDM now has trailing commission fields like Broker
 window.FundModel = window.FundModel || {};
 
 window.FundModel.Controls = function Controls({ assumptions, onUpdate }) {
@@ -48,6 +48,8 @@ window.FundModel.Controls = function Controls({ assumptions, onUpdate }) {
           <NumInput label="Monthly Capital" value={assumptions.bdmMonthlyCapital || 500000} onChange={v => upd('bdmMonthlyCapital', v)} suffix="$" step={100000} />
           <NumInput label="Retainer" value={assumptions.bdmRetainer || 0} onChange={v => upd('bdmRetainer', v)} suffix="$/mo" step={500} />
           <NumInput label="Rev Share" value={(assumptions.bdmRevSharePct || 0) * 100} onChange={v => upd('bdmRevSharePct', v/100)} suffix="%" step={0.5} />
+          <NumInput label="Commission" value={(assumptions.bdmCommissionRate || 0) * 100} onChange={v => upd('bdmCommissionRate', v/100)} suffix="%" step={0.1} />
+          <NumInput label="Trailing Months" value={assumptions.bdmTrailingMonths || 12} onChange={v => upd('bdmTrailingMonths', v)} suffix="M" />
         </>)}
       </Section>
       
