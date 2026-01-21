@@ -1,5 +1,5 @@
 // model/engine.js - Core P&L calculation loop
-// v10.15: CRITICAL FIX - M0 starts at EXACTLY $367K, cash CAN go negative
+// v10.18: CRITICAL FIX - Adrian duplication removed, cumulative founder funding fixed
 // Pre-launch costs go to shareholder loan, NOT deducted from starting pot
 
 window.FundModel = window.FundModel || {};
@@ -81,10 +81,9 @@ window.FundModel.runModel = function(assumptions, capitalInputs, returnMult, bdm
     const isPostBreakeven = breakEvenMonth !== null && m > breakEvenMonth;
     
     // CRITICAL FIX: M0 starts at EXACTLY $367K (Stone Park starting pot)
-    // Pre-launch months track expenses but DON'T deduct from starting cash
     const prev = months.length > 0 ? months[months.length - 1] : {
       closingAUM: 0, 
-      closingCash: isPreLaunch ? 0 : startingCashUSD,  // Pre-launch: 0, M0: $367K
+      closingCash: isPreLaunch ? 0 : startingCashUSD,
       cumulativeCapital: 0,
       cumulativeBDMAUM: 0, 
       cumulativeFounderFunding: 0, 
@@ -180,13 +179,13 @@ window.FundModel.runModel = function(assumptions, capitalInputs, returnMult, bdm
     // Other personnel
     const eaActive = m >= assumptions.eaStartMonth;
     const eaSalaryCost = eaActive ? eaSalary : 0;
+    // FIXED: Chairman is Adrian - quarterly £5K only (no separate adrianSalary)
     const chairmanActive = m >= assumptions.chairmanStartMonth && ((m - assumptions.chairmanStartMonth) % 3 === 0);
     const chairmanCost = chairmanActive ? assumptions.chairmanSalary : 0;
-    const adrianActive = m >= (assumptions.adrianStartMonth || -6);
-    const adrianSalary = adrianActive ? (assumptions.adrianSalary || 1667) : 0;
+    // REMOVED: adrianSalary - Adrian IS the Chairman, paid quarterly ONLY
     
-    const totalCashSalaries = ianCashExpense + paulCashExpense + lewisSalary + eaSalaryCost + chairmanCost + adrianSalary;
-    const totalSalaries = ianSalaryAmount + paulSalaryAmount + lewisSalary + eaSalaryCost + chairmanCost + adrianSalary;
+    const totalCashSalaries = ianCashExpense + paulCashExpense + lewisSalary + eaSalaryCost + chairmanCost;
+    const totalSalaries = ianSalaryAmount + paulSalaryAmount + lewisSalary + eaSalaryCost + chairmanCost;
     
     // OpEx
     const marketingAmount = isPostBreakeven ? (assumptions.marketingPostBE || 2000) : (assumptions.marketingPreBE || 2000);
@@ -251,8 +250,6 @@ window.FundModel.runModel = function(assumptions, capitalInputs, returnMult, bdm
     }
     
     // CRITICAL: Cash flow logic
-    // Pre-launch: Expenses go to shareholder loan, NOT cash
-    // Post-launch: Normal cash flow from starting pot
     let closingCash;
     let founderFundingRequired = 0;
     
@@ -260,27 +257,23 @@ window.FundModel.runModel = function(assumptions, capitalInputs, returnMult, bdm
       // Pre-launch: Expenses tracked in shareholder loan, cash stays at 0
       closingCash = 0;
       preLaunchExpenses += totalExpenses;
-      // Add pre-launch accruals to shareholder loan (beyond initial $126K)
       shareholderLoanBalance = prev.shareholderLoanBalance + ianAccrual + paulAccrual + marketingAccrual + travelAccrual;
     } else {
-      // Post-launch: Normal cash flow
-      // M0 starts fresh at $367K (prev.closingCash from initial state)
+      // Post-launch: Normal cash flow, M0 starts at $367K
       const netCashFlow = ebitda;
       closingCash = prev.closingCash + netCashFlow;
       
-      // CRITICAL: Cash CAN go negative - this is informational, not a hard limit
-      // No founder funding injection - the $367K IS the funding
-      // Track negative cash as a warning
-      if (closingCash < 0) {
-        founderFundingRequired = Math.abs(closingCash);
-        // DO NOT reset cash to zero - let it go negative to show the deficit
-      }
+      // CRITICAL FIX (BUG-101): Track DELTA of deficit, not absolute value
+      // This month's additional funding need is only what's NEW
+      const prevDeficit = prev.closingCash < 0 ? Math.abs(prev.closingCash) : 0;
+      const currDeficit = closingCash < 0 ? Math.abs(closingCash) : 0;
+      founderFundingRequired = currDeficit > prevDeficit ? currDeficit - prevDeficit : 0;
       
       // Shareholder loan accumulation (post-launch accruals)
       shareholderLoanBalance = prev.shareholderLoanBalance + ianAccrual + paulAccrual + marketingAccrual + travelAccrual;
     }
     
-    // Track cumulative founder funding need (informational)
+    // FIXED: Cumulative founder funding now accumulates correctly
     cumulativeFounderFunding = prev.cumulativeFounderFunding + founderFundingRequired;
     
     if (isPreLaunch) {
@@ -307,7 +300,7 @@ window.FundModel.runModel = function(assumptions, capitalInputs, returnMult, bdm
       carryPrivate, carryPublic, cumulativeCarryPrivate, cumulativeCarryPublic, 
       ianSalary: ianSalaryAmount, ianCashExpense, ianAccrual, ianRollUp: ianShouldRollUp,
       paulSalary: paulSalaryAmount, paulCashExpense, paulAccrual, paulRollUp: paulShouldRollUp,
-      lewisSalary, eaSalary: eaSalaryCost, adrianSalary, chairmanCost, totalSalaries, totalCashSalaries,
+      lewisSalary, eaSalary: eaSalaryCost, chairmanCost, totalSalaries, totalCashSalaries,
       officeIT, marketing: marketingAmount, marketingCash, marketingAccrual, 
       travel: travelAmount, travelCash, travelAccrual, compliance, setupCost,
       usFeederExpense, usFeederLpExpense,

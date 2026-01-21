@@ -1,4 +1,4 @@
-// config/assumptions.js v10.15 - Clear separation of Stone Park and Shareholder Loan
+// config/assumptions.js v10.18 - Adrian duplication fixed
 // Model Start: March 1, 2025 | Fund Launch: February 1, 2026 | Lewis: Aug 1, 2025
 window.FundModel = window.FundModel || {};
 
@@ -24,8 +24,8 @@ window.FundModel.PERSONNEL = {
   paul: { preBESalary: 5000, postBESalary: 10000, rollUpMode: 'untilBreakeven', cashDrawEnabled: true },
   lewis: { monthlySalary: 7000, startMonth: -6, durationMonths: 12 }, // Aug 2025, 12mo incl pre-launch
   emma: { monthlySalary: 1000, startMonth: 0 },
-  adrian: { monthlySalary: 1667, startMonth: -6 },
-  chairman: { quarterlyAmount: 5000, startMonth: 4 },
+  // REMOVED: adrian object - Adrian IS the Chairman (see chairman below)
+  chairman: { quarterlyAmount: 5000, startMonth: 4 }, // £5K quarterly = Adrian's ONLY cost
 };
 
 window.FundModel.OPEX = {
@@ -50,7 +50,7 @@ window.FundModel.SHAREHOLDER_LOAN = {
     lewisSalary: 84000,     // $7K × 12 months (approx)
     setupCosts: 10000,
     legal: 15000,
-    adrianHistorical: 8000,
+    adrianHistorical: 8000, // Historical cost only - NOT ongoing salary
     historicalTravel: 6000,
     other: 3000,
     total: 126000,          // Sum - owed to Ian
@@ -93,6 +93,7 @@ window.FundModel.REDEMPTIONS = { enabled: false, schedule: [{ month: 25, amount:
 window.FundModel.DOWNSIDE = { y1AumTarget: 30000000, capitalMultiplier: 0.5 };
 
 // DEFAULT_ASSUMPTIONS - flattened for engine
+// REMOVED: adrianSalary, adrianStartMonth - Adrian is the Chairman, paid quarterly ONLY
 window.FundModel.DEFAULT_ASSUMPTIONS = {
   projectionMonths: 36, preLaunchMonths: 11,
   modelStartDate: '2025-03-01', launchDate: '2026-02-01',
@@ -103,8 +104,7 @@ window.FundModel.DEFAULT_ASSUMPTIONS = {
   paulSalaryPre: 5000, paulSalaryPost: 10000, paulRollUpMode: 'untilBreakeven', paulCashDrawEnabled: true,
   lewisSalary: 7000, lewisStartMonth: -6, lewisMonths: 12,
   eaSalary: 1000, eaStartMonth: 0,
-  adrianSalary: 1667, adrianStartMonth: -6,
-  chairmanSalary: 5000, chairmanStartMonth: 4,
+  chairmanSalary: 5000, chairmanStartMonth: 4, // Adrian's ONLY cost - quarterly £5K
   officeIT: 1200, marketingPreBE: 2000, marketingPostBE: 2000, marketingRollUp: false,
   travelPreBE: 2000, travelPostBE: 2000, travelRollUp: false,
   compliance: 6500, setupCost: 10000,
