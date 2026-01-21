@@ -1,7 +1,7 @@
 # PROGRESS: v10 Rebuild
 
 **Last Updated**: January 21, 2026
-**Current Version**: v10.10
+**Current Version**: v10.12
 **Target Version**: v10.0+
 
 ## Repository
@@ -49,12 +49,17 @@ https://ianhigginsep.github.io/emergence-fund-model-v9/
 - [x] GP Organic, BDM, Broker raise inputs
 - [x] Start month configurability for each
 
-### Batch 11: Share Class Integration
-- [x] Founder Class: 0% mgmt fee, 0% perf fee (config done)
-- [x] Class A: 1.5% mgmt fee, 17.5% perf fee (config done)
-- [x] Class B: 1.5% mgmt fee, 17.5% perf fee (config done)
-- [x] Class C: 1.5% mgmt fee, 17.5% perf fee (config done)
-- [ ] **ENGINE INTEGRATION NEEDED**: Apply share class fees to revenue calculations
+### Batch 11: Share Class Integration ✅ COMPLETE
+- [x] config/share-classes.js - PPM definitions (Founder 0%, Class A/B/C 1.5%/17.5%)
+- [x] model/engine.js - Lines 84-113: Fee calculation by share class
+- [x] ui/ShareClasses.js - Full display component
+- [x] index.html - Tab configured and loaded
+
+**Verification**:
+- Founder Class AUM generates $0 mgmt fee (0% rate applied)
+- Class A AUM generates 1.5% annual / 12 monthly mgmt fee
+- Weighted average fee rate calculated and displayed
+- Share Classes tab shows cards, fee impact, annual breakdown, monthly AUM
 
 ### Batch 12: Validation & Reconciliation
 - [ ] Add cash flow reconciliation check
@@ -63,11 +68,10 @@ https://ianhigginsep.github.io/emergence-fund-model-v9/
 
 ---
 
-## REMAINING BATCHES: 2
+## REMAINING BATCHES: 1
 
 | Batch | Description | Status |
 |-------|-------------|--------|
-| **Batch 11** | Share Class Integration | Engine work needed |
 | **Batch 12** | Validation & Reconciliation | Not started |
 
 ---
@@ -87,20 +91,24 @@ https://ianhigginsep.github.io/emergence-fund-model-v9/
 
 ## COMPLETED BATCHES
 
+### Batch 11 (Jan 21, 2026)
+- Verified share class integration in engine.js
+- Files status:
+  - config/share-classes.js: ✅ Complete - PPM definitions
+  - model/engine.js: ✅ Complete - Fee calculation integrated
+    - Lines 84-90: founderPct/classAPct from cumulative capital
+    - Lines 92-93: AUM by class (founderAUM, classAAUM)
+    - Lines 95-100: Mgmt fee by class (Founder 0%, Class A 1.5%)
+    - Lines 107-113: Carry by class (Founder 0%, Class A 17.5%)
+    - Lines 177-184: shareClasses object in monthly output
+  - ui/ShareClasses.js: ✅ Complete - Display component
+  - index.html: ✅ Complete - Tab configured
+
 ### Batch 10 (Jan 21, 2026)
 - Created ui/CapitalTab.js with full capital configuration
 - Files modified:
   - ui/CapitalTab.js: NEW - dedicated capital raising UI
-    - Summary cards: GP Organic, BDM, Broker, Redemptions, Net
-    - GP Organic config: M0-M3, M4-M11, M12+ amounts
-    - BDM config: Start month, monthly amount
-    - Broker config: Start month, monthly amount
-    - Capital schedule table (Year 1 view)
-    - Redemption schedule display
   - config/capital.js: Updated to read from assumptions
-    - gpOrganicM0to3, gpOrganicM4to11, gpOrganicM12plus
-    - bdmCapitalStartMonth, bdmMonthlyCapital
-    - brokerCapitalStartMonth, brokerMonthlyCapital
   - config/assumptions.js: Added capital config fields
   - index.html: Added Capital tab to navigation
 
@@ -130,30 +138,74 @@ https://ianhigginsep.github.io/emergence-fund-model-v9/
 
 ---
 
-## NEXT BATCH: Batch 11 (Share Class Integration)
+## NEXT BATCH: Batch 12 (Validation & Reconciliation)
 
-**Status**: Config exists in config/share-classes.js, engine integration needed
+**Objective**: Ensure all calculations reconcile correctly
 
 Tasks:
-1. Integrate share class definitions into engine.js revenue calculation
-2. Track AUM by share class (or weighted approach)
-3. Apply correct mgmt fee rate per class
-4. Apply correct carry rate per class
-5. Display per-class breakdown in Dashboard or dedicated tab
+1. Add AUM reconciliation row to Cash Flow Statement
+   - Opening AUM + Net Capital + Investment Gain = Closing AUM
+   - Flag any discrepancies
+
+2. Add Cash reconciliation check
+   - Opening Cash + Revenue - Expenses - Funding = Closing Cash
+   - Display variance if any
+
+3. Validate share class allocation
+   - Founder AUM + Class A AUM = Total AUM
+   - Verify weighted fee rate calculation
+
+4. Cross-check with validation targets:
+   - Breakeven: M5
+   - Founder Funding: ~$182K
+   - Y3 AUM: ~$140M
 
 Files to modify:
-- model/engine.js — apply share class fees to revenue
-- ui/Dashboard.js or new ui/ShareClasses.js — display breakdown
-- Potentially config/share-classes.js — verify structure
+- ui/Tables.js — Add reconciliation rows
+- model/engine.js — Add validation flags if discrepancies found
+- ui/Dashboard.js — Add validation status indicator
 
-Share Class Reference (from PPM):
-| Class | Mgmt Fee | Carry | Public Weight |
-|-------|----------|-------|---------------|
-| Founder | 0% | 0% | 60% |
-| Class A | 1.5% | 17.5% | 60% |
-| Class B | 1.5% | 17.5% | 0% (private) |
-| Class C | 1.5% | 17.5% | 100% (public) |
+---
 
-Validation:
-- Founder class AUM should generate $0 mgmt fee
-- Weighted average fee should match current model (if all Class A)
+## BATCH 12 FOLLOW-ON PROMPT
+
+```
+Continue v10 rebuild. Execute Batch 12: Validation & Reconciliation
+
+CONTEXT:
+* Repo: https://github.com/IanhigginsEP/emergence-fund-model-v9
+* Live: https://ianhigginsep.github.io/emergence-fund-model-v9/
+* Batches 1-11 complete
+
+BATCH 12 TASKS:
+1. Add AUM reconciliation row to Cash Flow Statement
+   - Opening AUM + Net Capital + Investment Gain = Closing AUM
+   - Flag discrepancies in red
+
+2. Add Cash reconciliation check
+   - Opening Cash + Net Cash Flow = Closing Cash
+   - Display variance if any
+
+3. Validate share class totals
+   - Founder AUM + Class A AUM = Total AUM
+   - Add validation indicator to Share Classes tab
+
+4. Add validation status to Dashboard
+   - Green checkmark if all reconciliations pass
+   - Red warning if any discrepancies
+
+FILES TO MODIFY:
+* ui/Tables.js — Add reconciliation rows
+* ui/ShareClasses.js — Add validation check
+* ui/Dashboard.js — Add validation status indicator
+
+VALIDATION:
+* All reconciliation rows should show $0 variance
+* Validation indicator should be green
+* No red flags in any tab
+
+AFTER COMPLETING:
+1. Test live site
+2. Update PROGRESS_V10_REBUILD.md (mark Batch 12 complete)
+3. Confirm v10 rebuild is COMPLETE
+```
