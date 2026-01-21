@@ -1,7 +1,7 @@
 # PROGRESS: v10 Rebuild
 
 **Last Updated**: January 21, 2026
-**Current Version**: v9.6
+**Current Version**: v10.0-beta
 **Target Version**: v10.0
 
 ## Repository
@@ -14,14 +14,14 @@ https://ianhigginsep.github.io/emergence-fund-model-v9/
 
 ## BATCH STATUS
 
-### Batch 4: Founder Salary Toggles
-- [ ] Add Ian toggle (roll-up until date OR breakeven, then cash)
-- [ ] Add Paul toggle (same structure)
-- [ ] Update engine.js to read toggle dates
+### Batch 4: Founder Salary Toggles ✅ COMPLETE
+- [x] Add Ian toggle (roll-up until date OR breakeven, then cash)
+- [x] Add Paul toggle (same structure)
+- [x] Update engine.js to read toggle dates
 
-### Batch 5: Lewis & Adrian Corrections
+### Batch 5: Lewis & Adrian Corrections (IN PROGRESS)
 - [ ] Lewis: Add adjustment toggle (new amount at specified month)
-- [ ] Adrian: Change to $20K/year ($1,667/mo)
+- [ ] Adrian: Change to $20K/year ($1,667/mo) ← DONE in assumptions.js
 - [ ] Verify personnel costs in Cash Flow Statement
 
 ### Batch 6: Marketing & Travel Roll-Up
@@ -30,7 +30,7 @@ https://ianhigginsep.github.io/emergence-fund-model-v9/
 - [ ] Update amounts: $1.5-2K pre-BE, $3K post-BE
 
 ### Batch 7: Shareholder Loan Display
-- [ ] Add Paul $100K to initial balance
+- [ ] Add Paul $100K to initial balance ← DONE in assumptions.js
 - [ ] Display as rolling balance sheet item
 - [ ] Remove any repayment logic (just accumulation)
 
@@ -76,8 +76,8 @@ https://ianhigginsep.github.io/emergence-fund-model-v9/
 
 | Metric | Current | Target |
 |--------|---------|--------|
-| Pre-launch months | 11 | 12 (Mar 2025 - Feb 2026) |
-| Projection months | 24 | 36 |
+| Pre-launch months | 12 | 12 (Mar 2025 - Feb 2026) |
+| Projection months | 36 | 36 |
 | Starting cash (M0) | $367K | $367K |
 | Breakeven | OUTPUT | OUTPUT (not forced) |
 
@@ -85,7 +85,15 @@ https://ianhigginsep.github.io/emergence-fund-model-v9/
 
 ## COMPLETED BATCHES
 
-(None yet)
+### Batch 4 (Jan 21, 2026)
+- Added founder salary toggle modes: 'untilBreakeven' | 'untilMonth' | 'always' | 'never'
+- Ian and Paul both configurable with rollUpMode and rollUpEndMonth
+- Engine reads and applies toggle logic correctly
+- Also added: marketing/travel roll-up toggles in config (Batch 6 partial)
+- Also added: Paul $100K to shareholder loan initial items (Batch 7 partial)
+- Also added: Adrian corrected to $1,667/mo (Batch 5 partial)
+- Also added: Lewis adjustment fields (adjustmentMonth, adjustedSalary)
+- Also added: SHARE_CLASSES from PPM (Batch 11 partial)
 
 ---
 
@@ -93,4 +101,7 @@ https://ianhigginsep.github.io/emergence-fund-model-v9/
 
 ### Session: January 21, 2026
 - Created PROGRESS_V10_REBUILD.md
-- Starting Batch 4: Founder Salary Toggles
+- Batch 4 COMPLETE: Founder salary toggles
+- assumptions.js updated with rollUpMode config for Ian/Paul
+- engine.js updated with shouldRollUp() helper function
+- Also made progress on Batches 5, 6, 7, 11 via config updates
