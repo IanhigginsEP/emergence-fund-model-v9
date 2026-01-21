@@ -1,5 +1,5 @@
 // config/assumptions.js - All editable model inputs
-// v9.5: All USD, $367K starting pot, updated recoverables spec
+// v9.6: Paul cash draw toggle added to DEFAULT_ASSUMPTIONS
 
 window.FundModel = window.FundModel || {};
 
@@ -88,8 +88,10 @@ window.FundModel.DEFAULT_ASSUMPTIONS = {
   gpCommitmentRate: window.FundModel.FUND_ECONOMICS.gpCommitmentRate,
   ianSalaryPre: window.FundModel.PERSONNEL.ian.preBESalary,
   ianSalaryPost: window.FundModel.PERSONNEL.ian.postBESalary,
+  ianRollUp: window.FundModel.PERSONNEL.ian.treatAsRollUp,
   paulSalaryPre: window.FundModel.PERSONNEL.paul.preBESalary,
   paulSalaryPost: window.FundModel.PERSONNEL.paul.postBESalary,
+  paulCashDraw: window.FundModel.PERSONNEL.paul.cashDrawToggle,
   lewisSalary: window.FundModel.PERSONNEL.lewis.monthlySalary,
   lewisStartMonth: window.FundModel.PERSONNEL.lewis.startMonth,
   lewisMonths: window.FundModel.PERSONNEL.lewis.durationMonths,

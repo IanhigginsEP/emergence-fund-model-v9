@@ -1,6 +1,5 @@
-// ui/Controls.js - Input controls and recoverable costs panel
-// v7: Updated for new assumptions structure
-// v8.4: Converted to window.FundModel namespace
+// ui/Controls.js - Input controls with Paul cash draw toggle
+// v9.6: Added paulCashDraw toggle under Founder Salaries
 
 window.FundModel = window.FundModel || {};
 
@@ -23,9 +22,13 @@ window.FundModel.Controls = function Controls({ assumptions, onUpdate }) {
         <NumInput label="GP Commitment" value={assumptions.gpCommitmentRate * 100} onChange={v => upd('gpCommitmentRate', v/100)} suffix="%" step={0.5} />
       </Section>
       
-      <Section title="Founder Salaries">
+      <Section title="Founder Salaries" color="blue">
+        <p className="text-xs text-gray-500 mb-2">Ian: Roll-up (accrued to shareholder loan)</p>
         <NumInput label="Ian (Pre-BE)" value={assumptions.ianSalaryPre} onChange={v => upd('ianSalaryPre', v)} suffix="$" step={1000} />
         <NumInput label="Ian (Post-BE)" value={assumptions.ianSalaryPost} onChange={v => upd('ianSalaryPost', v)} suffix="$" step={1000} />
+        <div className="border-t mt-2 pt-2">
+          <ToggleInput label="Paul Cash Draw" value={assumptions.paulCashDraw} onChange={v => upd('paulCashDraw', v)} help="ON=Cash expense, OFF=Roll-up" />
+        </div>
         <NumInput label="Paul (Pre-BE)" value={assumptions.paulSalaryPre} onChange={v => upd('paulSalaryPre', v)} suffix="$" step={1000} />
         <NumInput label="Paul (Post-BE)" value={assumptions.paulSalaryPost} onChange={v => upd('paulSalaryPost', v)} suffix="$" step={1000} />
       </Section>
@@ -64,7 +67,7 @@ window.FundModel.RecoverablesPanel = function RecoverablesPanel({ recoverables, 
   return (
     <div className="bg-white rounded-lg shadow p-4">
       <h2 className="font-semibold mb-4">Recoverable Costs Tracker</h2>
-      <p className="text-sm text-gray-600 mb-4">Toggle which pre-breakeven costs should be tracked as potentially recoverable.</p>
+      <p className="text-sm text-gray-600 mb-4">Toggle which costs should be tracked as recoverable.</p>
       
       <div className="space-y-3">
         {recoverables.items.map(item => (
@@ -86,19 +89,16 @@ window.FundModel.RecoverablesPanel = function RecoverablesPanel({ recoverables, 
           <span className="font-semibold text-green-800">Total Recoverable</span>
           <span className="text-2xl font-bold text-green-700">{fmt(recoverables.totalRecoverable)}</span>
         </div>
-        {recoverables.breakEvenMonth && (
-          <p className="text-sm text-green-600 mt-1">Based on breakeven at Month {recoverables.breakEvenMonth}</p>
-        )}
       </div>
     </div>
   );
 };
 
 function Section({ title, color, children }) {
-  const bgClass = color === 'amber' ? 'bg-amber-50 border-amber-200' : 'bg-white';
-  const borderClass = color === 'amber' ? 'border-amber-300' : '';
+  const colorMap = { amber: 'bg-amber-50 border-amber-200', blue: 'bg-blue-50 border-blue-200' };
+  const bgClass = colorMap[color] || 'bg-white border-gray-200';
   return (
-    <div className={`rounded-lg shadow p-4 ${bgClass} border ${borderClass}`}>
+    <div className={`rounded-lg shadow p-4 border ${bgClass}`}>
       <h3 className="font-semibold mb-3 pb-2 border-b">{title}</h3>
       <div className="space-y-2">{children}</div>
     </div>
@@ -128,12 +128,15 @@ function DateInput({ label, value, onChange }) {
   );
 }
 
-function ToggleInput({ label, value, onChange }) {
+function ToggleInput({ label, value, onChange, help }) {
   return (
     <div className="flex justify-between items-center py-1 border-b border-gray-200">
-      <span className="text-sm text-gray-700">{label}</span>
+      <div>
+        <span className="text-sm text-gray-700">{label}</span>
+        {help && <span className="text-xs text-gray-400 ml-1">({help})</span>}
+      </div>
       <button onClick={() => onChange(!value)}
-        className={`px-3 py-1 rounded text-sm font-medium ${value ? 'bg-green-500 text-white' : 'bg-gray-200 text-gray-600'}`}>
+        className={`px-3 py-1 rounded text-sm font-medium transition ${value ? 'bg-green-500 text-white' : 'bg-gray-200 text-gray-600'}`}>
         {value ? 'ON' : 'OFF'}
       </button>
     </div>

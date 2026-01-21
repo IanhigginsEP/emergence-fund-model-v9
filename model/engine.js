@@ -1,5 +1,5 @@
 // model/engine.js - Core P&L calculation loop
-// v9.4: All USD, $367K starting pot, carry below line, EBITDA calc
+// v9.6: Paul cash draw reads from assumptions.paulCashDraw
 
 window.FundModel = window.FundModel || {};
 
@@ -7,7 +7,6 @@ window.FundModel.runModel = function(assumptions, capitalInputs, returnMult, bdm
   returnMult = returnMult || 1.0;
   bdmRevShare = bdmRevShare || 0;
   
-  const timeline = window.FundModel.TIMELINE || {};
   const revenueConfig = window.FundModel.REVENUE || {};
   const personnelConfig = window.FundModel.PERSONNEL || {};
   const carryBelowLine = revenueConfig.carryBelowLine !== false;
@@ -16,10 +15,9 @@ window.FundModel.runModel = function(assumptions, capitalInputs, returnMult, bdm
   const startingCashUSD = assumptions.startingCashUSD || 367000;
   const eaSalary = assumptions.eaSalary || 1000;
   
-  const ianConfig = personnelConfig.ian || {};
-  const paulConfig = personnelConfig.paul || {};
-  const ianTreatAsRollUp = ianConfig.treatAsRollUp === true;
-  const paulCashDraw = paulConfig.cashDrawToggle !== false;
+  // Founder salary treatment - read from assumptions
+  const ianRollUp = assumptions.ianRollUp !== false;
+  const paulCashDraw = assumptions.paulCashDraw !== false;
   
   const months = [];
   let breakEvenMonth = null;
@@ -73,10 +71,10 @@ window.FundModel.runModel = function(assumptions, capitalInputs, returnMult, bdm
     const operatingRevenue = mgmtFee;
     const totalRevenue = carryBelowLine ? operatingRevenue : (operatingRevenue + carryRevenue);
     
-    // Personnel expenses
+    // Personnel expenses - Ian always rolls up, Paul based on toggle
     const ianSalaryAmount = isPostBreakeven ? assumptions.ianSalaryPost : assumptions.ianSalaryPre;
-    const ianCashExpense = ianTreatAsRollUp ? 0 : ianSalaryAmount;
-    const ianAccrual = ianTreatAsRollUp ? ianSalaryAmount : 0;
+    const ianCashExpense = ianRollUp ? 0 : ianSalaryAmount;
+    const ianAccrual = ianRollUp ? ianSalaryAmount : 0;
     const paulSalaryAmount = isPostBreakeven ? assumptions.paulSalaryPost : assumptions.paulSalaryPre;
     const paulCashExpense = paulCashDraw ? paulSalaryAmount : 0;
     const paulAccrual = paulCashDraw ? 0 : paulSalaryAmount;
