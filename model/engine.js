@@ -1,7 +1,20 @@
 // model/engine.js - Core P&L calculation loop
-// v9.6: Paul cash draw reads from assumptions.paulCashDraw
+// v10.0: Founder salary toggle modes (untilBreakeven/untilMonth/always/never)
 
 window.FundModel = window.FundModel || {};
+
+// Helper: Determine if founder salary should roll up this month
+window.FundModel.shouldRollUp = function(mode, endMonth, currentMonth, breakEvenMonth) {
+  if (mode === 'always') return true;
+  if (mode === 'never') return false;
+  if (mode === 'untilMonth' && endMonth !== null) {
+    return currentMonth < endMonth;
+  }
+  if (mode === 'untilBreakeven') {
+    return breakEvenMonth === null || currentMonth <= breakEvenMonth;
+  }
+  return true; // default: roll up
+};
 
 window.FundModel.runModel = function(assumptions, capitalInputs, returnMult, bdmRevShare) {
   returnMult = returnMult || 1.0;
@@ -9,15 +22,22 @@ window.FundModel.runModel = function(assumptions, capitalInputs, returnMult, bdm
   
   const revenueConfig = window.FundModel.REVENUE || {};
   const personnelConfig = window.FundModel.PERSONNEL || {};
+  const opexConfig = window.FundModel.OPEX || {};
   const carryBelowLine = revenueConfig.carryBelowLine !== false;
   
   const effectiveReturn = assumptions.annualReturn * returnMult;
   const startingCashUSD = assumptions.startingCashUSD || 367000;
   const eaSalary = assumptions.eaSalary || 1000;
   
-  // Founder salary treatment - read from assumptions
-  const ianRollUp = assumptions.ianRollUp !== false;
-  const paulCashDraw = assumptions.paulCashDraw !== false;
+  // Founder salary toggle modes
+  const ianRollUpMode = assumptions.ianRollUpMode || 'untilBreakeven';
+  const ianRollUpEndMonth = assumptions.ianRollUpEndMonth;
+  const paulRollUpMode = assumptions.paulRollUpMode || 'untilBreakeven';
+  const paulRollUpEndMonth = assumptions.paulRollUpEndMonth;
+  
+  // OpEx roll-up toggles
+  const marketingRollUp = assumptions.marketingRollUp || false;
+  const travelRollUp = assumptions.travelRollUp || false;
   
   const months = [];
   let breakEvenMonth = null;
@@ -71,38 +91,57 @@ window.FundModel.runModel = function(assumptions, capitalInputs, returnMult, bdm
     const operatingRevenue = mgmtFee;
     const totalRevenue = carryBelowLine ? operatingRevenue : (operatingRevenue + carryRevenue);
     
-    // Personnel expenses - Ian always rolls up, Paul based on toggle
+    // Founder salary - determine roll-up based on mode
     const ianSalaryAmount = isPostBreakeven ? assumptions.ianSalaryPost : assumptions.ianSalaryPre;
-    const ianCashExpense = ianRollUp ? 0 : ianSalaryAmount;
-    const ianAccrual = ianRollUp ? ianSalaryAmount : 0;
-    const paulSalaryAmount = isPostBreakeven ? assumptions.paulSalaryPost : assumptions.paulSalaryPre;
-    const paulCashExpense = paulCashDraw ? paulSalaryAmount : 0;
-    const paulAccrual = paulCashDraw ? 0 : paulSalaryAmount;
+    const ianShouldRollUp = window.FundModel.shouldRollUp(ianRollUpMode, ianRollUpEndMonth, m, breakEvenMonth);
+    const ianCashExpense = ianShouldRollUp ? 0 : ianSalaryAmount;
+    const ianAccrual = ianShouldRollUp ? ianSalaryAmount : 0;
     
+    const paulSalaryAmount = isPostBreakeven ? assumptions.paulSalaryPost : assumptions.paulSalaryPre;
+    const paulShouldRollUp = window.FundModel.shouldRollUp(paulRollUpMode, paulRollUpEndMonth, m, breakEvenMonth);
+    const paulCashExpense = paulShouldRollUp ? 0 : paulSalaryAmount;
+    const paulAccrual = paulShouldRollUp ? paulSalaryAmount : 0;
+    
+    // Lewis (with optional adjustment at specified month)
     const lewisActive = m >= assumptions.lewisStartMonth && m < (assumptions.lewisStartMonth + assumptions.lewisMonths);
-    const lewisSalary = lewisActive ? assumptions.lewisSalary : 0;
+    let lewisSalary = 0;
+    if (lewisActive) {
+      if (assumptions.lewisAdjustmentMonth && m >= assumptions.lewisAdjustmentMonth && assumptions.lewisAdjustedSalary) {
+        lewisSalary = assumptions.lewisAdjustedSalary;
+      } else {
+        lewisSalary = assumptions.lewisSalary;
+      }
+    }
+    
+    // Other personnel
     const eaActive = m >= assumptions.eaStartMonth;
     const eaSalaryCost = eaActive ? eaSalary : 0;
     const chairmanActive = m >= assumptions.chairmanStartMonth && ((m - assumptions.chairmanStartMonth) % 3 === 0);
     const chairmanCost = chairmanActive ? assumptions.chairmanSalary : 0;
-    
-    const adrianConfig = personnelConfig.adrian || {};
-    const adrianActive = m >= (adrianConfig.startMonth || -6);
-    const adrianSalary = adrianActive ? (adrianConfig.monthlySalary || 1800) : 0;
+    const adrianActive = m >= (assumptions.adrianStartMonth || -6);
+    const adrianSalary = adrianActive ? (assumptions.adrianSalary || 1667) : 0;
     
     const totalCashSalaries = ianCashExpense + paulCashExpense + lewisSalary + eaSalaryCost + chairmanCost + adrianSalary;
     const totalSalaries = ianSalaryAmount + paulSalaryAmount + lewisSalary + eaSalaryCost + chairmanCost + adrianSalary;
     
-    // OpEx
-    const marketing = (assumptions.marketingStopsAtBreakeven && isPostBreakeven) ? 0 : assumptions.marketing;
+    // OpEx (with roll-up toggles)
+    const marketingAmount = isPostBreakeven ? (assumptions.marketingPostBE || 3000) : (assumptions.marketingPreBE || 1500);
+    const marketingCash = marketingRollUp ? 0 : marketingAmount;
+    const marketingAccrual = marketingRollUp ? marketingAmount : 0;
+    
+    const travelAmount = isPostBreakeven ? (assumptions.travelPostBE || 3000) : (assumptions.travelPreBE || 1500);
+    const travelCash = travelRollUp ? 0 : travelAmount;
+    const travelAccrual = travelRollUp ? travelAmount : 0;
+    
     const officeIT = assumptions.officeIT;
-    const travel = assumptions.travel;
     const compliance = isPreLaunch ? 0 : assumptions.compliance;
     const setupCost = m === 0 ? assumptions.setupCost : 0;
-    const totalOpex = officeIT + marketing + travel + compliance + setupCost;
+    
+    const totalOpexCash = officeIT + marketingCash + travelCash + compliance + setupCost;
+    const totalOpex = officeIT + marketingAmount + travelAmount + compliance + setupCost;
     const brokerCommission = brokerRaise * assumptions.brokerCommissionRate;
     
-    const totalCashExpenses = totalCashSalaries + totalOpex + brokerCommission;
+    const totalCashExpenses = totalCashSalaries + totalOpexCash + brokerCommission;
     const totalExpenses = totalSalaries + totalOpex + brokerCommission;
     
     // EBITDA & EBT
@@ -127,7 +166,8 @@ window.FundModel.runModel = function(assumptions, capitalInputs, returnMult, bdm
       cumulativeFounderFunding += founderFundingRequired;
     }
     
-    shareholderLoanBalance = prev.shareholderLoanBalance + ianAccrual + paulAccrual;
+    // Shareholder loan accumulation
+    shareholderLoanBalance = prev.shareholderLoanBalance + ianAccrual + paulAccrual + marketingAccrual + travelAccrual;
     
     if (isPreLaunch) {
       preLaunchCosts += totalExpenses;
@@ -140,9 +180,12 @@ window.FundModel.runModel = function(assumptions, capitalInputs, returnMult, bdm
       cumulativeBDMAUM, bdmAUMProportion, grossMgmtFee, bdmFeeShare, mgmtFee, 
       operatingRevenue, carryRevenue, totalRevenue,
       carryPrivate, carryPublic, cumulativeCarryPrivate, cumulativeCarryPublic, 
-      ianSalary: ianSalaryAmount, ianCashExpense, ianAccrual, paulSalary: paulSalaryAmount, paulCashExpense, paulAccrual,
+      ianSalary: ianSalaryAmount, ianCashExpense, ianAccrual, ianRollUp: ianShouldRollUp,
+      paulSalary: paulSalaryAmount, paulCashExpense, paulAccrual, paulRollUp: paulShouldRollUp,
       lewisSalary, eaSalary: eaSalaryCost, adrianSalary, chairmanCost, totalSalaries, totalCashSalaries,
-      officeIT, marketing, travel, compliance, setupCost, totalOpex, brokerCommission,
+      officeIT, marketing: marketingAmount, marketingCash, marketingAccrual, 
+      travel: travelAmount, travelCash, travelAccrual, compliance, setupCost, 
+      totalOpex, totalOpexCash, brokerCommission,
       totalCashExpenses, totalExpenses, ebitda, ebt, netIncome, netCashFlow,
       closingCash: adjustedClosingCash, founderFundingRequired, cumulativeFounderFunding, shareholderLoanBalance,
     });
