@@ -1,5 +1,5 @@
 // ui/Tables.js - Monthly P&L and Cashflow tables with frozen columns
-// v9.5: Sticky column A (left: 0) and row 1 (top: 0), bracket notation
+// v10.0: Personnel breakdown added for verification (Batch 5)
 
 window.FundModel = window.FundModel || {};
 
@@ -33,16 +33,25 @@ window.FundModel.MonthlyPL = function MonthlyPL({ model }) {
   );
 };
 
-window.FundModel.CashflowStatement = function CashflowStatement({ model }) {
+window.FundModel.CashflowStatement = function CashflowStatement({ model, showPersonnel }) {
   const { formatCurrency } = window.FundModel;
   const fmt = formatCurrency;
   const fmtBracket = (v) => v < 0 ? '(' + fmt(Math.abs(v)) + ')' : fmt(v);
   const { months } = model;
   const postLaunch = months ? months.filter(m => !m.isPreLaunch) : [];
+  const [expanded, setExpanded] = React.useState(showPersonnel || false);
   
   return (
     <div className="bg-white rounded-lg shadow p-4 overflow-x-auto">
-      <h2 className="font-semibold mb-3">Monthly Cashflow Statement</h2>
+      <div className="flex justify-between items-center mb-3">
+        <h2 className="font-semibold">Monthly Cashflow Statement</h2>
+        <button 
+          onClick={() => setExpanded(!expanded)}
+          className="text-xs px-2 py-1 bg-gray-100 hover:bg-gray-200 rounded"
+        >
+          {expanded ? 'Hide Personnel' : 'Show Personnel'}
+        </button>
+      </div>
       <table className="w-full text-xs freeze-table">
         <thead>
           <tr className="border-b bg-gray-50 sticky top-0 z-20">
@@ -52,6 +61,28 @@ window.FundModel.CashflowStatement = function CashflowStatement({ model }) {
         </thead>
         <tbody>
           <TableRow label="Operating Revenue" months={postLaunch} field="operatingRevenue" fmt={fmt} color="green" fallback="mgmtFee" />
+          
+          {/* Personnel Breakdown (collapsible) */}
+          {expanded && (
+            <>
+              <tr className="bg-yellow-50"><td colSpan={postLaunch.length+1} className="py-1 px-2 text-xs font-medium text-yellow-800 sticky left-0">Personnel (Cash)</td></tr>
+              <TableRow label="  Ian (cash)" months={postLaunch} field="ianCashExpense" fmt={fmt} color="red" />
+              <TableRow label="  Paul (cash)" months={postLaunch} field="paulCashExpense" fmt={fmt} color="red" />
+              <TableRow label="  Lewis" months={postLaunch} field="lewisSalary" fmt={fmt} color="red" />
+              <TableRow label="  Emma (EA)" months={postLaunch} field="eaSalary" fmt={fmt} color="red" />
+              <TableRow label="  Adrian" months={postLaunch} field="adrianSalary" fmt={fmt} color="red" />
+              <TableRow label="  Chairman" months={postLaunch} field="chairmanCost" fmt={fmt} color="red" />
+              <TableRow label="Total Cash Salaries" months={postLaunch} field="totalCashSalaries" fmt={fmtBracket} color="red" bold />
+              <tr className="bg-yellow-50"><td colSpan={postLaunch.length+1} className="py-1 px-2 text-xs font-medium text-yellow-800 sticky left-0">OpEx</td></tr>
+              <TableRow label="  Marketing" months={postLaunch} field="marketingCash" fmt={fmt} color="red" />
+              <TableRow label="  Travel" months={postLaunch} field="travelCash" fmt={fmt} color="red" />
+              <TableRow label="  Office/IT" months={postLaunch} field="officeIT" fmt={fmt} color="red" />
+              <TableRow label="  Compliance" months={postLaunch} field="compliance" fmt={fmt} color="red" />
+              <TableRow label="  Broker Comm" months={postLaunch} field="brokerCommission" fmt={fmt} color="red" />
+              <TableRow label="Total OpEx" months={postLaunch} field="totalOpexCash" fmt={fmtBracket} color="red" bold />
+            </>
+          )}
+          
           <TableRow label="Cash Expenses" months={postLaunch} field="totalCashExpenses" fmt={fmtBracket} color="red" fallback="totalExpenses" />
           <TableRow label="EBITDA" months={postLaunch} field="ebitda" fmt={fmtBracket} dynamic bg="blue" bold fallback="ebt" />
           <TableRow label="Net Cash Flow" months={postLaunch} field="netCashFlow" fmt={fmtBracket} dynamic bold />
@@ -62,10 +93,13 @@ window.FundModel.CashflowStatement = function CashflowStatement({ model }) {
           <tr className="bg-purple-100"><td colSpan={postLaunch.length+1} className="py-2 px-2 font-semibold text-purple-800 sticky left-0">Below the Line</td></tr>
           <TableRow label="Carried Interest" months={postLaunch} field="carryRevenue" fmt={fmt} color="purple" bg="purple" fallback="totalCarry" />
           <TableRow label="Ian Salary Accrual" months={postLaunch} field="ianAccrual" fmt={fmt} color="purple" />
+          <TableRow label="Paul Salary Accrual" months={postLaunch} field="paulAccrual" fmt={fmt} color="purple" />
+          <TableRow label="Marketing Accrual" months={postLaunch} field="marketingAccrual" fmt={fmt} color="purple" />
+          <TableRow label="Travel Accrual" months={postLaunch} field="travelAccrual" fmt={fmt} color="purple" />
           <TableRow label="Shareholder Loan" months={postLaunch} field="shareholderLoanBalance" fmt={fmt} color="amber" bg="amber" bold />
         </tbody>
       </table>
-      <p className="text-xs text-gray-500 mt-2">Negatives shown in brackets • Column A and Row 1 frozen</p>
+      <p className="text-xs text-gray-500 mt-2">Negatives in brackets • Click 'Show Personnel' for breakdown</p>
     </div>
   );
 };
