@@ -1,5 +1,5 @@
 // model/engine.js - Core P&L calculation loop
-// v10.12: Share class fee integration - GP Commit → Founder (0%), LP → Class A (1.5%)
+// v10.13: Fix M0 cash - founders inject at launch to restore starting pot
 
 window.FundModel = window.FundModel || {};
 
@@ -109,9 +109,9 @@ window.FundModel.runModel = function(assumptions, capitalInputs, returnMult, bdm
       : gpCommitRate / (1 + gpCommitRate);
     const classAPct = 1 - founderPct;
     
-    // AUM by share class
-    const founderAUM = openingAUM * founderPct;
-    const classAAUM = openingAUM * classAPct;
+    // AUM by share class (based on closingAUM for proper reconciliation)
+    const founderAUM = closingAUM * founderPct;
+    const classAAUM = closingAUM * classAPct;
     
     // Management fee by share class (Founder = 0%, Class A = 1.5%)
     const founderMgmtFee = 0; // Founder class has no management fee
@@ -120,7 +120,7 @@ window.FundModel.runModel = function(assumptions, capitalInputs, returnMult, bdm
     const grossMgmtFee = founderMgmtFee + classAMgmtFee;
     
     // Weighted average fee rate for reporting
-    const weightedMgmtRate = openingAUM > 0 ? (grossMgmtFee * 12) / openingAUM : 0;
+    const weightedMgmtRate = closingAUM > 0 ? (grossMgmtFee * 12) / closingAUM : 0;
     
     // Carry by share class (Founder = 0%, Class A = 17.5%)
     const founderCarryRate = shareClasses.founder?.carryRate || 0;
@@ -224,16 +224,25 @@ window.FundModel.runModel = function(assumptions, capitalInputs, returnMult, bdm
       if (breakEvenMonth === null && rollingEBITDA.every(e => e > 0) && m >= 2) breakEvenMonth = m;
     }
     
-    // Cash flow
+    // Cash flow with founder funding logic
     const netCashFlow = ebitda;
-    const closingCash = prev.closingCash + netCashFlow;
+    let closingCash = prev.closingCash + netCashFlow;
     let founderFundingRequired = 0;
-    let adjustedClosingCash = closingCash;
-    if (closingCash < 0) {
-      founderFundingRequired = Math.abs(closingCash);
-      adjustedClosingCash = 0;
+    
+    // At M0 (launch), founders inject to restore starting pot
+    if (m === 0 && closingCash < startingCashUSD) {
+      founderFundingRequired = startingCashUSD - closingCash;
+      closingCash = startingCashUSD;
       cumulativeFounderFunding += founderFundingRequired;
     }
+    // After launch, founders inject only if cash goes negative
+    else if (!isPreLaunch && m > 0 && closingCash < 0) {
+      founderFundingRequired = Math.abs(closingCash);
+      closingCash = 0;
+      cumulativeFounderFunding += founderFundingRequired;
+    }
+    
+    const adjustedClosingCash = closingCash;
     
     // Shareholder loan accumulation
     shareholderLoanBalance = prev.shareholderLoanBalance + ianAccrual + paulAccrual + marketingAccrual + travelAccrual;
