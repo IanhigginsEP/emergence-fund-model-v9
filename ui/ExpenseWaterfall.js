@@ -1,18 +1,22 @@
 // ui/ExpenseWaterfall.js - Expense breakdown waterfall chart
 // Shows Salaries + OpEx + Commissions → Total Expenses
-// v9.1: Added for LP-ready enhancements
+// v10.19: FIXED - Y1/Y2/Y3 buttons now clickable
 
 window.FundModel = window.FundModel || {};
 
-window.FundModel.ExpenseWaterfall = function ExpenseWaterfall({ model, year = 'all' }) {
-  const { useMemo } = React;
+window.FundModel.ExpenseWaterfall = function ExpenseWaterfall({ model }) {
+  const { useState, useMemo } = React;
   const { formatCurrency } = window.FundModel;
   const fmt = formatCurrency;
   
+  // State for selected year filter
+  const [year, setYear] = useState('all');
+  
   const data = useMemo(() => {
-    const months = year === 'all' ? model.months :
-      year === 1 ? model.months.slice(0, 12) :
-      year === 2 ? model.months.slice(12, 24) : model.months.slice(24, 36);
+    const postLaunch = model.months.filter(m => !m.isPreLaunch);
+    const months = year === 'all' ? postLaunch :
+      year === 1 ? postLaunch.slice(0, 12) :
+      year === 2 ? postLaunch.slice(12, 24) : postLaunch.slice(24, 36);
     
     const sum = (field) => months.reduce((s, m) => s + (m[field] || 0), 0);
     
@@ -25,7 +29,7 @@ window.FundModel.ExpenseWaterfall = function ExpenseWaterfall({ model, year = 'a
       { label: 'Marketing', value: sum('marketing'), color: '#a855f7' },
       { label: 'Travel', value: sum('travel'), color: '#c084fc' },
       { label: 'Setup Costs', value: sum('setupCost'), color: '#94a3b8' },
-      { label: 'Broker Commission', value: sum('brokerCommission'), color: '#64748b' },
+      { label: 'Broker Commission', value: sum('totalBrokerExpense') || sum('brokerCommission'), color: '#64748b' },
       { label: 'Total Expenses', value: sum('totalExpenses'), type: 'total', color: '#ef4444' },
     ].filter(d => Math.abs(d.value) > 0 || d.type === 'total');
   }, [model, year]);
@@ -42,11 +46,19 @@ window.FundModel.ExpenseWaterfall = function ExpenseWaterfall({ model, year = 'a
     <div className="bg-white rounded-lg shadow p-4">
       <div className="flex justify-between items-center mb-3">
         <h2 className="font-semibold">📊 Expense Waterfall</h2>
-        <div className="flex gap-2">
+        <div className="flex gap-1">
           {['all', 1, 2, 3].map(y => (
-            <span key={y} className={`text-xs px-2 py-1 rounded ${
-              year === y ? 'bg-red-100 text-red-700' : 'text-gray-400'
-            }`}>{y === 'all' ? '36M' : `Y${y}`}</span>
+            <button
+              key={y}
+              onClick={() => setYear(y)}
+              className={`text-xs px-3 py-1 rounded transition-colors cursor-pointer ${
+                year === y 
+                  ? 'bg-red-600 text-white font-semibold' 
+                  : 'bg-gray-100 text-gray-600 hover:bg-red-100 hover:text-red-700'
+              }`}
+            >
+              {y === 'all' ? '36M' : `Y${y}`}
+            </button>
           ))}
         </div>
       </div>
