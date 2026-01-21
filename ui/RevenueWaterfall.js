@@ -1,22 +1,25 @@
 // ui/RevenueWaterfall.js - Revenue breakdown waterfall chart
 // Shows Management Fees + Carried Interest → Total Revenue
-// v9.1: Added for LP-ready enhancements
+// v10.19: FIXED - Y1/Y2/Y3 buttons now clickable
 
 window.FundModel = window.FundModel || {};
 
-window.FundModel.RevenueWaterfall = function RevenueWaterfall({ model, year = 'all' }) {
-  const { useMemo } = React;
+window.FundModel.RevenueWaterfall = function RevenueWaterfall({ model }) {
+  const { useState, useMemo } = React;
   const { formatCurrency } = window.FundModel;
   const fmt = formatCurrency;
   
+  // State for selected year filter
+  const [year, setYear] = useState('all');
+  
   const data = useMemo(() => {
-    const months = year === 'all' ? model.months.filter(m => !m.isPreLaunch) :
-      year === 1 ? model.months.slice(0, 12) :
-      year === 2 ? model.months.slice(12, 24) : model.months.slice(24, 36);
+    const postLaunch = model.months.filter(m => !m.isPreLaunch);
+    const months = year === 'all' ? postLaunch :
+      year === 1 ? postLaunch.slice(0, 12) :
+      year === 2 ? postLaunch.slice(12, 24) : postLaunch.slice(24, 36);
     
     const sum = (field) => months.reduce((s, m) => s + (m[field] || 0), 0);
-    const mgmtFee = sum('mgmtFee') + sum('grossMgmtFee') - sum('mgmtFee'); // Use gross if available
-    const carry = sum('totalCarry');
+    const carry = sum('carryRevenue') || sum('totalCarry');
     const bdmShare = sum('bdmFeeShare');
     
     return [
@@ -39,11 +42,19 @@ window.FundModel.RevenueWaterfall = function RevenueWaterfall({ model, year = 'a
     <div className="bg-white rounded-lg shadow p-4">
       <div className="flex justify-between items-center mb-3">
         <h2 className="font-semibold">💰 Revenue Waterfall</h2>
-        <div className="flex gap-2">
+        <div className="flex gap-1">
           {['all', 1, 2, 3].map(y => (
-            <span key={y} className={`text-xs px-2 py-1 rounded ${
-              year === y ? 'bg-blue-100 text-blue-700' : 'text-gray-400'
-            }`}>{y === 'all' ? '36M' : `Y${y}`}</span>
+            <button
+              key={y}
+              onClick={() => setYear(y)}
+              className={`text-xs px-3 py-1 rounded transition-colors cursor-pointer ${
+                year === y 
+                  ? 'bg-blue-600 text-white font-semibold' 
+                  : 'bg-gray-100 text-gray-600 hover:bg-blue-100 hover:text-blue-700'
+              }`}
+            >
+              {y === 'all' ? '36M' : `Y${y}`}
+            </button>
           ))}
         </div>
       </div>
@@ -63,7 +74,7 @@ window.FundModel.RevenueWaterfall = function RevenueWaterfall({ model, year = 'a
               </text>
               
               {/* Bar */}
-              <rect x={padL} y={y} width={barW} height={barHeight} 
+              <rect x={padL} y={y} width={Math.max(barW, 2)} height={barHeight} 
                 fill={d.color} rx={3} opacity={isTotal ? 1 : 0.8} />
               
               {/* Value */}
