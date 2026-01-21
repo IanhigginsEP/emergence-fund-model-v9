@@ -1,5 +1,5 @@
 // ui/Dashboard.js - Summary KPI cards, Cash Flow, and KPI Table
-// v10.14: Fixed cash reconciliation to include founder funding
+// v10.15: Fixed BUG-001 cash validation - M0 prevCash now uses M-1 closing cash
 
 window.FundModel = window.FundModel || {};
 
@@ -29,9 +29,13 @@ window.FundModel.Dashboard = function Dashboard({ model, scenarioName, onResetSc
   const y1EBITDA = y1Months.reduce((sum, m) => sum + (m.ebitda || 0), 0);
   const totalCarry = summary?.totals?.totalCarry || 0;
   
-  // Calculate validation status
+  // FIX BUG-001: Use M-1 closing cash as M0's prevCash, not startingCash
+  const preLaunchMonths = months ? months.filter(m => m.isPreLaunch) : [];
   const postLaunch = months ? months.filter(m => !m.isPreLaunch) : [];
-  const validationStatus = calculateValidationStatus(postLaunch, startingPot);
+  const m0PrevCash = preLaunchMonths.length > 0 
+    ? (preLaunchMonths[preLaunchMonths.length - 1].closingCash || startingPot) 
+    : startingPot;
+  const validationStatus = calculateValidationStatus(postLaunch, m0PrevCash);
   
   return (
     <div className="space-y-4">
@@ -39,7 +43,7 @@ window.FundModel.Dashboard = function Dashboard({ model, scenarioName, onResetSc
       <ValidationBanner status={validationStatus} />
       
       {scenarioName !== 'Base' && (
-        <div className="rounded-lg shadow p-3 flex justify-between items-center bg-blue-50 border border-blue-200">
+        <div className="rounded-lg shadow p-3 flex items-center justify-between bg-blue-50 border border-blue-200">
           <span className="text-sm font-medium">📊 Viewing <strong>{scenarioName}</strong> scenario</span>
           <button onClick={onResetScenario} className="text-xs px-3 py-1 bg-white rounded border hover:bg-gray-50">Reset to Base</button>
         </div>
@@ -81,7 +85,7 @@ window.FundModel.Dashboard = function Dashboard({ model, scenarioName, onResetSc
   );
 };
 
-function calculateValidationStatus(postLaunch, startingCash) {
+function calculateValidationStatus(postLaunch, m0PrevCash) {
   let aumOk = true, cashOk = true, shareClassOk = true;
   
   postLaunch.forEach((m, idx) => {
@@ -90,7 +94,8 @@ function calculateValidationStatus(postLaunch, startingCash) {
     if (aumVariance > 1) aumOk = false;
     
     // Cash check: Previous Closing + Net Cash Flow + Founder Funding = Current Closing
-    const prevCash = idx > 0 ? (postLaunch[idx - 1].closingCash || 0) : startingCash;
+    // BUG-001 FIX: For M0, use M-1's closing cash (m0PrevCash), not startingCash
+    const prevCash = idx > 0 ? (postLaunch[idx - 1].closingCash || 0) : m0PrevCash;
     const founderFunding = m.founderFundingRequired || 0;
     const expectedCash = prevCash + (m.netCashFlow || 0) + founderFunding;
     const cashVariance = Math.abs((m.closingCash || 0) - expectedCash);
