@@ -1,53 +1,39 @@
 # FOLLOW-ON PROMPT: Fix v10.12 Bugs
 
-Copy and paste this entire prompt into a new Claude session to continue fixing bugs.
+Copy and paste this entire prompt into a new Claude session.
 
 ---
 
 ## CONTEXT
 
-I have a fund P&L model at:
+Fund P&L model with bugs:
 - **Repository**: https://github.com/IanhigginsEP/emergence-fund-model-v9
 - **Live Site**: https://ianhigginsep.github.io/emergence-fund-model-v9/
-
-The model has 8 critical bugs documented in `BUG_LIST_V10.12.md` in the repository.
+- **Bug List**: `BUG_LIST_V10.12.md` in repository
 
 ## YOUR TASK
 
-1. **First**: Read `BUG_LIST_V10.12.md` from the repository to see all open bugs and fix instructions
-2. **Fix bugs in order**: BUG-001 → BUG-002 → BUG-007 → BUG-005 → BUG-006 → BUG-004 → BUG-003 → BUG-008
-3. **For each bug**:
-   - Fetch the relevant file from GitHub
-   - Make the specific fix described in the bug list
-   - Push the fix to GitHub
-   - Update BUG_LIST_V10.12.md to mark as FIXED
-   - Verify on live site (wait 2 min for GitHub Pages deploy)
+1. Fetch and read `BUG_LIST_V10.12.md` from the repository
+2. Fix bugs in the order listed
+3. For each bug: fetch file → fix → push → update bug list status → verify on live site
+4. Keep files under 150 lines
 
-## KEY FILES
+## VERIFIABLE BUGS TO FIX
 
-- `model/engine.js` - Core calculation (most bugs are here)
-- `ui/Tables.js` - Cash flow display (BUG-002: pre-launch months)
-- `ui/Dashboard.js` - KPI display (BUG-006: Ian accrual)
-- `config/assumptions.js` - Starting values
+1. **BUG-004**: M0 cash shows $241K but Starting Pot is $367K (file: model/engine.js)
+2. **BUG-003**: Pre-launch months M-11 to M-1 not displayed (file: ui/Tables.js)
+3. **BUG-001**: Cash reconciliation failing - red X on dashboard (file: model/engine.js)
+4. **BUG-002**: Share class validation failing - red X on dashboard (file: model/engine.js)
+5. **BUG-005**: "Ian Accrued Salary" label shows $459K total SL balance (file: ui/Dashboard.js)
+6. **BUG-006**: Founder Funding shows $0 but $126K gap exists (file: model/engine.js)
 
-## VALIDATION TARGETS
+## WHAT SUCCESS LOOKS LIKE
 
-After all fixes, the model should show:
-- Starting cash M0: $367K
-- Pre-launch months: M-11 to M-1 visible
-- Breakeven: ~M5
-- Founder Funding: ~$182K
-- Y3 AUM: ~$140.58M
-- All reconciliation checks: GREEN
+- All validation checks GREEN (AUM ✓, Cash ✓, Share Classes ✓)
+- Pre-launch months visible in Cash Flow tab
+- M0 Cash Balance = Starting Pot ($367K)
+- Labels match what they display
 
-## RULES
+## START
 
-1. **Read the bug list first** - don't rediscover problems
-2. **One bug at a time** - fix, commit, verify, then next
-3. **Update bug list** - mark each bug FIXED after confirming
-4. **Keep files under 150 lines** - modular architecture rule
-5. **Test on live site** - GitHub Pages deploys in ~2 minutes
-
-## START NOW
-
-Begin by fetching BUG_LIST_V10.12.md from the repository, then start fixing BUG-001.
+Fetch `BUG_LIST_V10.12.md` and begin fixing BUG-004.
