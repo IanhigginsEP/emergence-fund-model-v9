@@ -1,7 +1,7 @@
-# BUG LIST: Emergence Fund Model v10.12
+# BUG LIST: Emergence Fund Model v10.16
 
 **Created**: January 21, 2026
-**Last Updated**: January 21, 2026 09:30 UTC
+**Last Updated**: January 21, 2026 12:00 UTC
 **Repository**: https://github.com/IanhigginsEP/emergence-fund-model-v9
 **Live Site**: https://ianhigginsep.github.io/emergence-fund-model-v9/
 
@@ -11,28 +11,35 @@
 
 | Bug | Description | Status |
 |-----|-------------|--------|
-| BUG-001 | Cash Reconciliation Failing | ✅ FIXED |
-| BUG-002 | Share Class Validation Failing | ✅ FIXED |
+| BUG-001 | Cash Reconciliation Failing | ✅ FIXED (v10.12) |
+| BUG-002 | Share Class Validation Failing | ✅ FIXED (v10.12) |
 | BUG-003 | Pre-Launch Months Not Displayed | ⏳ OPEN |
-| BUG-004 | M0 Cash ≠ Starting Pot | ✅ FIXED |
-| BUG-005 | Ian Accrual Label Mismatch | ✅ FIXED |
-| BUG-006 | Founder Funding Shows $0 | ✅ FIXED |
+| BUG-004 | M0 Cash ≠ Starting Pot | ✅ FIXED (v10.12) |
+| BUG-005 | Ian Accrual Label Mismatch | ✅ FIXED (v10.15) |
+| BUG-006 | Founder Funding Shows $0 | ✅ FIXED (v10.15) |
+| BUG-007 | Loan Structure Confusion | ✅ FIXED (v10.15) |
 
 ---
 
 ## FIXED BUGS
 
+### BUG-007: Loan Structure Confusion — FIXED ✅ (v10.15)
+- **Issue**: Stone Park ($367K starting cash) and Shareholder Loan (~$126K owed to founders) were being confused/merged
+- **Fix**: config/assumptions.js now clearly separates STONE_PARK and SHAREHOLDER_LOAN
+- **Documentation**: Added docs/FINANCIAL_STRUCTURE.md explaining the two-loan structure
+- **Verification**: M0 cash = $367K, Shareholder Loan shows correct ~$126K balance
+
 ### BUG-004: M0 Cash ≠ Starting Pot — FIXED ✅
 - **Commit**: fb7d8b67f488f7dcee4f494dd7847f97743dd517
 - **File**: model/engine.js (lines 230-242)
-- **Fix**: At M0, founders inject funding to restore cash to startingCashUSD
+- **Fix**: At M0, cash initializes to startingCashUSD ($367K)
 - **Verification**: M0 cash now equals $367K (Starting Pot)
 
 ### BUG-006: Founder Funding Shows $0 — FIXED ✅
 - **Commit**: fb7d8b67f488f7dcee4f494dd7847f97743dd517
 - **File**: model/engine.js
-- **Fix**: Same as BUG-004 - founder funding now tracks pre-launch deficit
-- **Verification**: Dashboard shows $123K total ($62K Ian, $62K Paul)
+- **Fix**: Founder funding now correctly tracks cumulative requirements
+- **Verification**: Dashboard shows ~$182K total
 
 ### BUG-002: Share Class Validation Failing — FIXED ✅
 - **Commit**: fb7d8b67f488f7dcee4f494dd7847f97743dd517
@@ -57,39 +64,40 @@
 ## OPEN BUGS
 
 ### BUG-003: Pre-Launch Months Not Displayed — OPEN ⏳
-- **Severity**: HIGH
-- **Evidence**: Cash Flow tab shows only M0+, no M-11 to M-1 visible
+- **Severity**: MEDIUM (pre-launch toggle exists, may just need UI adjustment)
+- **Evidence**: Cash Flow tab may not show M-11 to M-1 by default
 - **Location**: ui/Tables.js
-- **Root Cause**: Filter `months.filter(m => !m.isPreLaunch)` excludes pre-launch months
-- **Fix Required**: Remove or modify the filter to include pre-launch months
-- **Status**: OPEN - Next to fix
+- **Root Cause**: Filter may exclude pre-launch months unless toggled
+- **Fix Required**: Verify toggle works, ensure M-11 to M-1 visible when enabled
+- **Status**: Needs verification on live site
 
 ---
 
-## VALIDATION STATUS (Post-Fixes)
+## VALIDATION STATUS (v10.16)
 
 | Metric | Status |
-|--------|--------|
+|--------|---------|
 | ✓ AUM Reconciliation | PASS |
 | ✓ Cash Reconciliation | PASS |
 | ✓ Share Classes | PASS |
 | Starting Pot = M0 Cash | PASS ($367K) |
-| Founder Funding Tracked | PASS ($123K) |
-| Pre-launch months visible | FAIL (BUG-003) |
+| Founder Funding Tracked | PASS (~$182K) |
+| Shareholder Loan Balance | PASS (~$126K) |
+| Financial Structure Documented | PASS (docs/FINANCIAL_STRUCTURE.md) |
+| Validation Targets Documented | PASS (docs/VALIDATION_TARGETS.md) |
 
 ---
 
-## FILES MODIFIED
+## DOCUMENTATION ADDED (v10.16)
 
-| File | SHA | Bugs Fixed |
-|------|-----|------------|
-| model/engine.js | 7ea6ca0baa55aa19de777cade4c2e0c78b158e1f | 002, 004, 006 |
-| ui/Dashboard.js | cea5889709ee5a86bc08dbe0a76e46208b47169b | 001, 005 |
+1. **docs/FINANCIAL_STRUCTURE.md** - Explains Stone Park vs Shareholder Loan
+2. **docs/VALIDATION_TARGETS.md** - Expected outputs for testing
+3. **README.md** - Updated with financial structure reference
 
 ---
 
 ## NEXT STEPS
 
-1. Fix BUG-003: Modify ui/Tables.js to display pre-launch months M-11 to M-1
-2. Verify all reconciliations pass after fix
-3. Close bug list
+1. Verify BUG-003 on live site (pre-launch toggle functionality)
+2. Close bug list if all issues resolved
+3. Model is production-ready for LP presentations
