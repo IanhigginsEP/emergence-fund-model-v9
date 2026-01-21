@@ -1,5 +1,6 @@
 // config/assumptions.js - All editable model inputs
 // v10.0: Founder salary toggles (roll-up until date OR breakeven, then cash)
+// v10.8: US Feeder Fund month selector and GP/LP toggle
 
 window.FundModel = window.FundModel || {};
 
@@ -25,18 +26,18 @@ window.FundModel.PERSONNEL = {
   paul: { 
     preBESalary: 5000, 
     postBESalary: 10000, 
-    rollUpMode: 'untilBreakeven', // 'untilBreakeven' | 'untilMonth' | 'always' | 'never'
+    rollUpMode: 'untilBreakeven',
     rollUpEndMonth: null,
   },
   lewis: { 
     monthlySalary: 7000, 
     startMonth: -5, 
     durationMonths: 12,
-    adjustmentMonth: null, // optional: month when salary changes
-    adjustedSalary: null,  // optional: new salary at adjustment month
+    adjustmentMonth: null,
+    adjustedSalary: null,
   },
   emma: { monthlySalary: 1000, startMonth: 0 },
-  adrian: { monthlySalary: 1667, startMonth: -6 }, // $20K/year = $1,667/month
+  adrian: { monthlySalary: 1667, startMonth: -6 },
   chairman: { quarterlyAmount: 5000, startMonth: 4 },
 };
 
@@ -46,16 +47,8 @@ window.FundModel.OPEX = {
   office: 600,
   tech: 400,
   mobile: 200,
-  marketing: { 
-    preBE: 1500, 
-    postBE: 3000, 
-    rollUpToSL: false, // toggle: add to shareholder loan instead of cash expense
-  },
-  travel: { 
-    preBE: 1500, 
-    postBE: 3000, 
-    rollUpToSL: false,
-  },
+  marketing: { preBE: 1500, postBE: 3000, rollUpToSL: false },
+  travel: { preBE: 1500, postBE: 3000, rollUpToSL: false },
   setupCost: 10000,
 };
 
@@ -89,21 +82,17 @@ window.FundModel.SHAREHOLDER_LOAN = {
   interestRate: 0.05,
 };
 
+// US Feeder Fund settings (extracted for easier access)
+window.FundModel.US_FEEDER = {
+  amount: 30000,
+  month: null,       // null = not triggered, 0-35 = trigger month
+  isGpExpense: true, // true = GP pays, false = LP pays (fund expense)
+};
+
 window.FundModel.CAPITAL = {
   gpOrganic: { m0to11: 2500000, m12to35: 2500000 },
-  bdm: { 
-    startMonth: 7, 
-    monthly: 500000, 
-    retainer: 0, 
-    revSharePct: 0, // % of mgmt fee on BDM-raised AUM
-  },
-  brokerRaise: { 
-    startMonth: 3, 
-    monthly: 250000, 
-    retainer: 0,
-    commissionRate: 0.01, // 1% of mgmt fee on broker-raised AUM for 12 months
-    trailingMonths: 12,
-  },
+  bdm: { startMonth: 7, monthly: 500000, retainer: 0, revSharePct: 0 },
+  brokerRaise: { startMonth: 3, monthly: 250000, retainer: 0, commissionRate: 0.01, trailingMonths: 12 },
 };
 
 window.FundModel.SHARE_CLASSES = {
@@ -163,4 +152,8 @@ window.FundModel.DEFAULT_ASSUMPTIONS = {
   // Commission
   brokerStartMonth: window.FundModel.CAPITAL.brokerRaise.startMonth,
   brokerCommissionRate: window.FundModel.CAPITAL.brokerRaise.commissionRate,
+  // US Feeder Fund
+  usFeederMonth: window.FundModel.US_FEEDER.month,
+  usFeederAmount: window.FundModel.US_FEEDER.amount,
+  usFeederIsGpExpense: window.FundModel.US_FEEDER.isGpExpense,
 };

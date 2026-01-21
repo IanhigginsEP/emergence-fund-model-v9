@@ -1,10 +1,17 @@
 // ui/Controls.js - Input controls with Paul cash draw toggle
 // v9.6: Added paulCashDraw toggle under Founder Salaries
+// v10.8: Added US Feeder Fund controls (month selector + GP/LP toggle)
 
 window.FundModel = window.FundModel || {};
 
 window.FundModel.Controls = function Controls({ assumptions, onUpdate }) {
   const upd = (k, v) => onUpdate(k, v);
+  
+  // Generate month options for dropdown (null, 0-35)
+  const monthOptions = [{ value: 'null', label: 'Not Triggered' }];
+  for (let i = 0; i <= 35; i++) {
+    monthOptions.push({ value: String(i), label: `M${i}` });
+  }
   
   return (
     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -51,6 +58,29 @@ window.FundModel.Controls = function Controls({ assumptions, onUpdate }) {
         <NumInput label="Setup Cost" value={assumptions.setupCost} onChange={v => upd('setupCost', v)} suffix="$" step={1000} />
       </Section>
       
+      <Section title="US Feeder Fund" color="purple">
+        <p className="text-xs text-gray-500 mb-2">$30K one-time expense for US feeder structure</p>
+        <SelectInput 
+          label="Trigger Month" 
+          value={assumptions.usFeederMonth === null ? 'null' : String(assumptions.usFeederMonth)} 
+          options={monthOptions}
+          onChange={v => upd('usFeederMonth', v === 'null' ? null : parseInt(v))} 
+        />
+        <NumInput label="Amount" value={assumptions.usFeederAmount || 30000} onChange={v => upd('usFeederAmount', v)} suffix="$" step={5000} />
+        <ToggleInput 
+          label="GP Expense" 
+          value={assumptions.usFeederIsGpExpense !== false} 
+          onChange={v => upd('usFeederIsGpExpense', v)} 
+          help="ON=GP pays, OFF=LP/Fund pays" 
+        />
+        {assumptions.usFeederMonth !== null && (
+          <div className="mt-2 p-2 bg-purple-100 rounded text-xs">
+            <strong>Active:</strong> ${(assumptions.usFeederAmount || 30000).toLocaleString()} expense at M{assumptions.usFeederMonth} 
+            ({assumptions.usFeederIsGpExpense !== false ? 'GP' : 'LP'} expense)
+          </div>
+        )}
+      </Section>
+      
       <Section title="Fund Structure">
         <NumInput label="Fund Launch Month" value={assumptions.fundLaunchMonth} onChange={v => upd('fundLaunchMonth', v)} suffix="M" />
         <NumInput label="Redemption Start" value={assumptions.redemptionStartMonth} onChange={v => upd('redemptionStartMonth', v)} suffix="M" />
@@ -95,7 +125,7 @@ window.FundModel.RecoverablesPanel = function RecoverablesPanel({ recoverables, 
 };
 
 function Section({ title, color, children }) {
-  const colorMap = { amber: 'bg-amber-50 border-amber-200', blue: 'bg-blue-50 border-blue-200' };
+  const colorMap = { amber: 'bg-amber-50 border-amber-200', blue: 'bg-blue-50 border-blue-200', purple: 'bg-purple-50 border-purple-200' };
   const bgClass = colorMap[color] || 'bg-white border-gray-200';
   return (
     <div className={`rounded-lg shadow p-4 border ${bgClass}`}>
@@ -124,6 +154,20 @@ function DateInput({ label, value, onChange }) {
       <span className="text-sm text-gray-700">{label}</span>
       <input type="date" value={value} onChange={e => onChange(e.target.value)}
         className="px-2 py-1 text-blue-600 font-mono text-sm border border-gray-300 rounded" />
+    </div>
+  );
+}
+
+function SelectInput({ label, value, options, onChange }) {
+  return (
+    <div className="flex justify-between items-center py-1 border-b border-gray-200">
+      <span className="text-sm text-gray-700">{label}</span>
+      <select value={value} onChange={e => onChange(e.target.value)}
+        className="px-2 py-1 text-blue-600 font-mono text-sm border border-gray-300 rounded">
+        {options.map(opt => (
+          <option key={opt.value} value={opt.value}>{opt.label}</option>
+        ))}
+      </select>
     </div>
   );
 }

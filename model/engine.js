@@ -1,5 +1,6 @@
 // model/engine.js - Core P&L calculation loop
 // v10.0: Founder salary toggle modes (untilBreakeven/untilMonth/always/never)
+// v10.8: US Feeder Fund expense - triggered at selected month, GP/LP toggle
 
 window.FundModel = window.FundModel || {};
 
@@ -21,8 +22,6 @@ window.FundModel.runModel = function(assumptions, capitalInputs, returnMult, bdm
   bdmRevShare = bdmRevShare || 0;
   
   const revenueConfig = window.FundModel.REVENUE || {};
-  const personnelConfig = window.FundModel.PERSONNEL || {};
-  const opexConfig = window.FundModel.OPEX || {};
   const carryBelowLine = revenueConfig.carryBelowLine !== false;
   
   const effectiveReturn = assumptions.annualReturn * returnMult;
@@ -38,6 +37,11 @@ window.FundModel.runModel = function(assumptions, capitalInputs, returnMult, bdm
   // OpEx roll-up toggles
   const marketingRollUp = assumptions.marketingRollUp || false;
   const travelRollUp = assumptions.travelRollUp || false;
+  
+  // US Feeder Fund settings
+  const usFeederMonth = assumptions.usFeederMonth;
+  const usFeederAmount = assumptions.usFeederAmount || 30000;
+  const usFeederIsGpExpense = assumptions.usFeederIsGpExpense !== false; // default true
   
   const months = [];
   let breakEvenMonth = null;
@@ -76,7 +80,7 @@ window.FundModel.runModel = function(assumptions, capitalInputs, returnMult, bdm
     cumulativeBDMAUM = prev.cumulativeBDMAUM + bdmRaise;
     const bdmAUMProportion = closingAUM > 0 ? Math.min(cumulativeBDMAUM / closingAUM, 1) : 0;
     
-    // Carry (below line)
+    // Carry
     const privateWeight = 1 - assumptions.publicWeight;
     const carryPrivate = investmentGain * privateWeight * assumptions.carryRatePrivate;
     const carryPublic = investmentGain * assumptions.publicWeight * assumptions.carryRatePublic;
@@ -84,14 +88,14 @@ window.FundModel.runModel = function(assumptions, capitalInputs, returnMult, bdm
     cumulativeCarryPrivate += carryPrivate;
     cumulativeCarryPublic += carryPublic;
     
-    // Management fee (operating revenue only)
+    // Management fee
     const grossMgmtFee = isPreLaunch ? 0 : openingAUM * (assumptions.mgmtFeeAnnual / 12);
     const bdmFeeShare = grossMgmtFee * bdmAUMProportion * bdmRevShare;
     const mgmtFee = grossMgmtFee - bdmFeeShare;
     const operatingRevenue = mgmtFee;
     const totalRevenue = carryBelowLine ? operatingRevenue : (operatingRevenue + carryRevenue);
     
-    // Founder salary - determine roll-up based on mode
+    // Founder salary
     const ianSalaryAmount = isPostBreakeven ? assumptions.ianSalaryPost : assumptions.ianSalaryPre;
     const ianShouldRollUp = window.FundModel.shouldRollUp(ianRollUpMode, ianRollUpEndMonth, m, breakEvenMonth);
     const ianCashExpense = ianShouldRollUp ? 0 : ianSalaryAmount;
@@ -102,7 +106,7 @@ window.FundModel.runModel = function(assumptions, capitalInputs, returnMult, bdm
     const paulCashExpense = paulShouldRollUp ? 0 : paulSalaryAmount;
     const paulAccrual = paulShouldRollUp ? paulSalaryAmount : 0;
     
-    // Lewis (with optional adjustment at specified month)
+    // Lewis (with optional adjustment)
     const lewisActive = m >= assumptions.lewisStartMonth && m < (assumptions.lewisStartMonth + assumptions.lewisMonths);
     let lewisSalary = 0;
     if (lewisActive) {
@@ -137,8 +141,19 @@ window.FundModel.runModel = function(assumptions, capitalInputs, returnMult, bdm
     const compliance = isPreLaunch ? 0 : assumptions.compliance;
     const setupCost = m === 0 ? assumptions.setupCost : 0;
     
-    const totalOpexCash = officeIT + marketingCash + travelCash + compliance + setupCost;
-    const totalOpex = officeIT + marketingAmount + travelAmount + compliance + setupCost;
+    // US Feeder Fund expense (triggered at specific month)
+    let usFeederExpense = 0;
+    let usFeederLpExpense = 0;
+    if (usFeederMonth !== null && m === usFeederMonth) {
+      if (usFeederIsGpExpense) {
+        usFeederExpense = usFeederAmount; // GP expense - hits cash flow
+      } else {
+        usFeederLpExpense = usFeederAmount; // LP expense - separate tracking
+      }
+    }
+    
+    const totalOpexCash = officeIT + marketingCash + travelCash + compliance + setupCost + usFeederExpense;
+    const totalOpex = officeIT + marketingAmount + travelAmount + compliance + setupCost + usFeederExpense;
     const brokerCommission = brokerRaise * assumptions.brokerCommissionRate;
     
     const totalCashExpenses = totalCashSalaries + totalOpexCash + brokerCommission;
@@ -184,7 +199,8 @@ window.FundModel.runModel = function(assumptions, capitalInputs, returnMult, bdm
       paulSalary: paulSalaryAmount, paulCashExpense, paulAccrual, paulRollUp: paulShouldRollUp,
       lewisSalary, eaSalary: eaSalaryCost, adrianSalary, chairmanCost, totalSalaries, totalCashSalaries,
       officeIT, marketing: marketingAmount, marketingCash, marketingAccrual, 
-      travel: travelAmount, travelCash, travelAccrual, compliance, setupCost, 
+      travel: travelAmount, travelCash, travelAccrual, compliance, setupCost,
+      usFeederExpense, usFeederLpExpense,
       totalOpex, totalOpexCash, brokerCommission,
       totalCashExpenses, totalExpenses, ebitda, ebt, netIncome, netCashFlow,
       closingCash: adjustedClosingCash, founderFundingRequired, cumulativeFounderFunding, shareholderLoanBalance,
@@ -197,5 +213,7 @@ window.FundModel.runModel = function(assumptions, capitalInputs, returnMult, bdm
 window.FundModel.getInitialShareholderLoan = function() {
   const slConfig = window.FundModel.SHAREHOLDER_LOAN || {};
   const items = slConfig.initialItems || [];
-  return items.reduce((sum, item) => sum + (item.amount || 0), 0);
+  // Only include items that are NOT the US Feeder (it's handled separately by month trigger)
+  return items.filter(item => item.description !== 'US Feeder Fund')
+              .reduce((sum, item) => sum + (item.amount || 0), 0);
 };

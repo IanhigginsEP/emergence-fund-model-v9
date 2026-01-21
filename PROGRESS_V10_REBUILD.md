@@ -1,8 +1,8 @@
 # PROGRESS: v10 Rebuild
 
 **Last Updated**: January 21, 2026
-**Current Version**: v10.0
-**Target Version**: v10.0
+**Current Version**: v10.8
+**Target Version**: v10.0+
 
 ## Repository
 https://github.com/IanhigginsEP/emergence-fund-model-v9
@@ -34,10 +34,12 @@ https://ianhigginsep.github.io/emergence-fund-model-v9/
 - [x] Display as rolling balance sheet item - BalanceSheet.js created
 - [x] Verify no repayment logic (just accumulation) - confirmed in engine.js
 
-### Batch 8: US Feeder Fund
-- [ ] Add as one-time configurable expense
-- [ ] Add month selector
-- [ ] Add GP/LP toggle (who bears the cost)
+### Batch 8: US Feeder Fund ✅ COMPLETE
+- [x] Add as one-time configurable expense ($30K default)
+- [x] Add month selector (null = not triggered, M0-M35)
+- [x] Add GP/LP toggle (who bears the cost)
+- [x] Engine processes expense at selected month
+- [x] Distinct tracking: usFeederExpense (GP) vs usFeederLpExpense (LP)
 
 ### Batch 9: BDM & Broker Fee Structure
 - [ ] Create fee configuration inputs (retainer + %)
@@ -86,6 +88,19 @@ https://ianhigginsep.github.io/emergence-fund-model-v9/
 
 ## COMPLETED BATCHES
 
+### Batch 8 (Jan 21, 2026)
+- Added US Feeder Fund as configurable one-time expense
+- Files modified:
+  - config/assumptions.js: Added US_FEEDER config block, usFeederMonth/Amount/IsGpExpense to DEFAULT_ASSUMPTIONS
+  - model/engine.js: Added usFeederExpense/usFeederLpExpense processing at selected month
+  - ui/Controls.js: Added "US Feeder Fund" section with month dropdown, amount input, GP/LP toggle
+- Features:
+  - Month selector dropdown (Not Triggered, M0-M35)
+  - Amount configurable (default $30K)
+  - GP Expense toggle (ON = hits GP cash flow, OFF = LP/Fund expense)
+  - Visual confirmation when active
+  - Excluded from initial shareholder loan (only triggered at selected month)
+
 ### Batch 7 (Jan 21, 2026)
 - Created ui/BalanceSheet.js with:
   - Initial items breakdown table (from SHAREHOLDER_LOAN.initialItems)
@@ -121,20 +136,28 @@ https://ianhigginsep.github.io/emergence-fund-model-v9/
 
 ## SESSION LOG
 
-### Session: January 21, 2026 (latest)
+### Session: January 21, 2026 (Batch 8)
+- Batch 8 COMPLETE
+- US Feeder Fund expense implementation:
+  - Month selector in UI (Controls.js)
+  - GP/LP toggle determines expense treatment
+  - Engine processes at selected month
+  - Excluded from initial SL balance (separate triggering)
+
+### Session: January 21, 2026 (Batch 7)
 - Batch 7 COMPLETE
 - Created BalanceSheet.js (113 lines)
 - Added Balance Sheet tab to index.html
 - Verified no repayment logic in engine.js
 - SL balance accumulates: initial + ianAccrual + paulAccrual + marketingAccrual + travelAccrual
 
-### Session: January 21, 2026 (continued)
+### Session: January 21, 2026 (Batch 5)
 - Batch 5 COMPLETE
 - Tables.js updated with personnel breakdown (collapsible)
 - Shows all salary line items for verification
 - Paul salary accrual now shows below the line
 
-### Session: January 21, 2026
+### Session: January 21, 2026 (Batch 4)
 - Created PROGRESS_V10_REBUILD.md
 - Batch 4 COMPLETE: Founder salary toggles
 - assumptions.js updated with rollUpMode config for Ian/Paul
@@ -143,9 +166,21 @@ https://ianhigginsep.github.io/emergence-fund-model-v9/
 
 ---
 
-## NEXT BATCH: Batch 8 (US Feeder Fund)
+## NEXT BATCH: Batch 9 (BDM & Broker Fee Structure)
 
 Tasks:
-1. Add US Feeder Fund as configurable one-time expense
-2. Add month selector for when expense occurs
-3. Add GP/LP toggle (who bears the cost)
+1. Create fee configuration inputs in Controls.js
+   - BDM: retainer amount + rev share % + start month
+   - Broker: retainer + trailing commission rate + trailing months
+2. Implement trailing commission calculation in engine.js
+3. Add to Cash Flow Statement as distinct expense lines
+4. Consider broker commission attribution (12-month trailing)
+
+Files to modify:
+- ui/Controls.js — add BDM/Broker config section
+- model/engine.js — implement commission logic
+- config/assumptions.js — verify structure supports new fields
+
+Validation:
+- Broker commission should show for 12 months after capital raised
+- BDM rev share % should reduce effective mgmt fee on BDM-raised AUM
