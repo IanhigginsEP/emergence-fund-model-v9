@@ -1,59 +1,96 @@
-# Model Files
+# Model Directory
 
-Core calculation logic for the fund P&L model.
+Core calculation engine for the Emergence Partners Fund P&L model.
 
 ## Files
 
-### engine.js (MAIN FILE)
-**The heart of the model** - Contains the main calculation loop.
+### engine.js
+**Main calculation loop** - Runs month-by-month P&L projection
 
-Key functions:
-- `runModel(assumptions, scenarioKey)`: Main entry point
-- Pre-launch loop: M-11 to M-1 (setup costs, Lewis salary)
-- Post-launch loop: M0 to M35 (full P&L)
-- Calculates: AUM, revenue, expenses, cash flow, founder funding
-- Returns complete month-by-month data for UI rendering
+**Key Functions:**
+- `runModel(assumptions, capitalInputs, returnMult, bdmRevShare)` - Main entry point
+- `shouldRollUp(mode, endMonth, currentMonth, breakEvenMonth)` - Determines founder salary treatment
+- `getInitialShareholderLoan()` - Calculates initial shareholder loan balance
 
-**Edit with caution** - Bugs here affect everything.
+**Parameters:**
+- `assumptions` - Flattened object from DEFAULT_ASSUMPTIONS
+- `capitalInputs` - Array of monthly capital objects from config/capital.js
+- `returnMult` - Multiplier for annual return (default 1.0)
+- `bdmRevShare` - BDM revenue share percentage (default from assumptions)
+
+**Output Object:**
+```javascript
+{
+  months: [],           // Array of 47 month objects (M-11 to M35)
+  preLaunchData: [],    // Pre-launch months only (M-11 to M-1)
+  preLaunchCosts: 0,    // Total pre-launch expenses
+  breakEvenMonth: null, // First month with 3 consecutive positive EBITDA
+  cumulativeFounderFunding: 0,
+  startingCashUSD: 367000
+}
+```
+
+**Each Month Object Contains:**
+- AUM: openingAUM, closingAUM, netCapital, investmentGain
+- Revenue: grossMgmtFee, mgmtFee, carryRevenue, operatingRevenue
+- Expenses: totalSalaries, totalOpex, totalExpenses
+- Cash: closingCash, netCashFlow, founderFundingRequired
+- Share Classes: founderAUM, classAAUM with fee calculations
 
 ### summaries.js
-Annual aggregation and formatting functions:
-- `calculateAnnualSummaries(months)`: Y1, Y2, Y3 totals
-- `calculateValidationStatus(model)`: AUM/Cash/ShareClass checks
-- Helper functions for formatting
+**Annual aggregation functions**
 
-### recoverables.js
-Tracks recoverable costs:
-- Setup costs, marketing, travel that can be recovered later
-- Triggered at configurable month (default M24)
-- Configurable recovery rate (default 50% of excess cash)
+- `calculateAnnualSummaries(months)` - Groups months into Y1, Y2, Y3
+- `formatCurrency(v)` - Formats numbers as $XXK or $XX.XXM
+- `formatPct(v)` - Formats as percentage
 
 ### formatters.js
-Number formatting utilities:
-- `fmt(value)`: Currency formatting ($1.2M, $50K, $500)
-- `fmtPct(value)`: Percentage formatting (14.5%)
+**Number formatting utilities** exposed on window.FundModel
 
-## Key Concepts
+- `fmt(v)` - Currency formatting
+- `fmtPct(v)` - Percentage formatting
+
+### recoverables.js
+**Recoverable cost tracking** (if implemented)
+
+## Calculation Logic
 
 ### Cash Flow Calculation
 ```
-Net Cash Flow = Operating Revenue - Cash Expenses + Founder Funding
-Cash Balance = Previous Cash Balance + Net Cash Flow
+EBITDA = Operating Revenue - Cash Expenses
+Closing Cash = Opening Cash + EBITDA
 ```
 
-### Shareholder Loan (Below the Line)
-- Ian's salary accrues to shareholder loan
-- Marketing and travel (if configured) accrue to shareholder loan
-- Not in cash flow, tracked separately
+### Founder Funding Logic
+1. At M0: If cash < startingCashUSD, founders inject difference
+2. After M0: If cash < 0, founders inject to restore to $0
 
-### Founder Funding
-- When cash would go negative, founders inject capital
-- Split 50/50 between Ian and Paul
-- Tracked cumulatively
+### Breakeven Detection
+Breakeven = First month where 3 consecutive months have positive EBITDA
 
-## Testing
+### BDM/Broker Trailing Commission
+Both BDM and Broker can have trailing commissions:
+```javascript
+// For each historical raise in the trailing window:
+trailingComm += raise.amount * commissionRate / 12
+```
+- `brokerTrailingMonths` default: 12
+- `bdmTrailingMonths` default: 12
 
-After any change to engine.js:
-1. Refresh browser
-2. Check Dashboard reconciliations (all should be green)
-3. Verify Cash Balance matches expected trajectory
+### Share Class Allocation
+- **Founder Class**: GP Commitment portion (no fees)
+- **Class A**: LP portion (1.5% mgmt fee, 17.5% carry)
+
+```javascript
+founderPct = cumulativeGPCommit / (cumulativeGPCommit + cumulativeLPCapital)
+classAPct = 1 - founderPct
+```
+
+## Timeline
+
+| Month | Date | Description |
+|-------|------|-------------|
+| M-11 | Mar 2025 | Model start |
+| M-6 | Aug 2025 | Lewis starts |
+| M0 | Feb 2026 | Fund launch |
+| M35 | Jan 2029 | Projection end |
