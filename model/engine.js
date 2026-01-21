@@ -1,5 +1,5 @@
 // model/engine.js - Core P&L calculation loop
-// v10.11: Share class fee integration - GP Commit → Founder (0%), LP → Class A (1.5%)
+// v10.12: Share class fee integration - GP Commit → Founder (0%), LP → Class A (1.5%)
 
 window.FundModel = window.FundModel || {};
 
@@ -115,17 +115,19 @@ window.FundModel.runModel = function(assumptions, capitalInputs, returnMult, bdm
     
     // Management fee by share class (Founder = 0%, Class A = 1.5%)
     const founderMgmtFee = 0; // Founder class has no management fee
-    const classAMgmtFeeRate = shareClasses.classA?.mgmtFee || 0.015;
+    const classAMgmtFeeRate = shareClasses.classA?.mgmtFeeRate || 0.015;
     const classAMgmtFee = isPreLaunch ? 0 : classAAUM * (classAMgmtFeeRate / 12);
     const grossMgmtFee = founderMgmtFee + classAMgmtFee;
     
     // Weighted average fee rate for reporting
     const weightedMgmtRate = openingAUM > 0 ? (grossMgmtFee * 12) / openingAUM : 0;
     
-    // Carry
+    // Carry by share class (Founder = 0%, Class A = 17.5%)
+    const founderCarryRate = shareClasses.founder?.carryRate || 0;
+    const classACarryRate = shareClasses.classA?.carryRate || 0.175;
     const privateWeight = 1 - assumptions.publicWeight;
-    const carryPrivate = investmentGain * privateWeight * assumptions.carryRatePrivate;
-    const carryPublic = investmentGain * assumptions.publicWeight * assumptions.carryRatePublic;
+    const carryPrivate = investmentGain * privateWeight * classACarryRate * classAPct;
+    const carryPublic = investmentGain * assumptions.publicWeight * classACarryRate * classAPct;
     const carryRevenue = carryPrivate + carryPublic;
     cumulativeCarryPrivate += carryPrivate;
     cumulativeCarryPublic += carryPublic;
@@ -247,10 +249,10 @@ window.FundModel.runModel = function(assumptions, capitalInputs, returnMult, bdm
       cumulativeBDMAUM, cumulativeGPCommit, cumulativeLPCapital, bdmAUMProportion,
       // Share class breakdown
       shareClasses: {
-        founder: { aum: founderAUM, pct: founderPct, mgmtFee: founderMgmtFee },
-        classA: { aum: classAAUM, pct: classAPct, mgmtFee: classAMgmtFee },
-        classB: { aum: 0, pct: 0, mgmtFee: 0 },
-        classC: { aum: 0, pct: 0, mgmtFee: 0 },
+        founder: { aum: founderAUM, pct: founderPct, mgmtFee: founderMgmtFee, carryRate: founderCarryRate },
+        classA: { aum: classAAUM, pct: classAPct, mgmtFee: classAMgmtFee, carryRate: classACarryRate },
+        classB: { aum: 0, pct: 0, mgmtFee: 0, carryRate: 0 },
+        classC: { aum: 0, pct: 0, mgmtFee: 0, carryRate: 0 },
       },
       weightedMgmtRate,
       grossMgmtFee, bdmFeeShare, mgmtFee, operatingRevenue, carryRevenue, totalRevenue,
