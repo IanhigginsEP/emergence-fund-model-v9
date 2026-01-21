@@ -1,25 +1,98 @@
 // ui/Charts.js - Visualizations for AUM, cash, burn rate
-// v7: Added burn rate and founder funding charts
-// v8.4: Converted to window.FundModel namespace
+// v10.18: Added AUM milestone annotations (BUG-104)
 
 window.FundModel = window.FundModel || {};
 
 window.FundModel.AUMChart = function AUMChart({ model }) {
   const { formatCurrency } = window.FundModel;
+  const fmt = formatCurrency;
   const { months } = model;
   const maxAUM = Math.max(...months.map(m => m.closingAUM));
+  const postLaunch = months.filter(m => m.month >= 0);
+  
+  // Calculate milestone values
+  const m12Data = postLaunch.find(m => m.month === 11);
+  const m24Data = postLaunch.find(m => m.month === 23);
+  const m36Data = postLaunch.find(m => m.month === 35);
   
   return (
     <div className="bg-white rounded-lg shadow p-4">
       <h2 className="font-semibold mb-3">AUM Trajectory</h2>
-      <SimpleSVGChart data={months.map(m => m.closingAUM)} max={maxAUM} color="#3b82f6" label="AUM" />
+      <AUMChartSVG 
+        data={postLaunch.map(m => m.closingAUM)} 
+        max={maxAUM} 
+        milestones={[
+          { idx: 11, value: m12Data?.closingAUM, label: 'M12' },
+          { idx: 23, value: m24Data?.closingAUM, label: 'M24' },
+          { idx: 35, value: m36Data?.closingAUM, label: 'M36' }
+        ]}
+        fmt={fmt}
+      />
     </div>
   );
 };
 
+function AUMChartSVG({ data, max, milestones, fmt }) {
+  const h = 200, w = 700, padL = 70, padR = 20, padT = 30, padB = 35;
+  const plotW = w - padL - padR, plotH = h - padT - padB;
+  const effectiveMax = max || 1;
+  
+  const scaleY = v => padT + plotH - (v / effectiveMax) * plotH;
+  const scaleX = i => padL + (i / (data.length - 1)) * plotW;
+  
+  const path = data.map((v, i) => `${i === 0 ? 'M' : 'L'}${scaleX(i)},${scaleY(v)}`).join(' ');
+  
+  return (
+    <svg viewBox={`0 0 ${w} ${h}`} className="w-full h-52">
+      {/* Y-axis grid lines and labels */}
+      {[0, 0.25, 0.5, 0.75, 1].map((pct, i) => {
+        const val = effectiveMax * pct;
+        const y = scaleY(val);
+        return (
+          <g key={i}>
+            <line x1={padL} x2={w - padR} y1={y} y2={y} stroke="#e5e7eb" strokeDasharray="4,4" />
+            <text x={padL - 5} y={y + 4} textAnchor="end" className="text-xs fill-gray-500">{fmt(val)}</text>
+          </g>
+        );
+      })}
+      
+      {/* X-axis labels */}
+      {[0, 11, 23, 35].map(i => (
+        <text key={i} x={scaleX(i)} y={h - 8} textAnchor="middle" className="text-xs fill-gray-500">M{i}</text>
+      ))}
+      
+      {/* Axis titles */}
+      <text x={15} y={h / 2} transform={`rotate(-90 15 ${h/2})`} textAnchor="middle" className="text-xs fill-gray-400">AUM ($)</text>
+      <text x={w / 2} y={h - 2} textAnchor="middle" className="text-xs fill-gray-400">Month</text>
+      
+      {/* Main curve */}
+      <path d={path} fill="none" stroke="#3b82f6" strokeWidth="2.5" />
+      
+      {/* Milestone annotations (BUG-104) */}
+      {milestones.filter(m => m.value !== undefined).map(m => {
+        const x = scaleX(m.idx);
+        const y = scaleY(m.value);
+        return (
+          <g key={m.label}>
+            {/* Vertical reference line */}
+            <line x1={x} x2={x} y1={y} y2={padT + plotH} stroke="#3b82f6" strokeWidth="1" strokeDasharray="3,3" opacity="0.5" />
+            {/* Dot */}
+            <circle cx={x} cy={y} r="5" fill="#3b82f6" />
+            {/* Label background */}
+            <rect x={x - 30} y={y - 22} width="60" height="18" rx="3" fill="#3b82f6" opacity="0.9" />
+            {/* Label text */}
+            <text x={x} y={y - 9} textAnchor="middle" className="text-xs fill-white font-semibold">{fmt(m.value)}</text>
+          </g>
+        );
+      })}
+    </svg>
+  );
+}
+
 window.FundModel.CashChart = function CashChart({ model }) {
+  const { formatCurrency } = window.FundModel;
   const { months } = model;
-  const values = months.map(m => m.closingCash);
+  const values = months.filter(m => m.month >= 0).map(m => m.closingCash);
   const max = Math.max(...values.map(Math.abs));
   
   return (
@@ -32,7 +105,8 @@ window.FundModel.CashChart = function CashChart({ model }) {
 
 window.FundModel.BurnRateChart = function BurnRateChart({ model }) {
   const { months } = model;
-  const burnData = months.map(m => m.totalExpenses - m.totalRevenue);
+  const postLaunch = months.filter(m => m.month >= 0);
+  const burnData = postLaunch.map(m => m.totalExpenses - m.totalRevenue);
   const max = Math.max(...burnData.map(Math.abs));
   
   return (
@@ -46,10 +120,11 @@ window.FundModel.BurnRateChart = function BurnRateChart({ model }) {
 
 window.FundModel.FounderFundingChart = function FounderFundingChart({ model }) {
   const { formatCurrency } = window.FundModel;
-  const { months, cumulativeFounderFunding } = model;
-  const cumData = months.map(m => m.cumulativeFounderFunding);
-  const max = cumulativeFounderFunding || 1;
   const fmt = formatCurrency;
+  const { months, cumulativeFounderFunding } = model;
+  const postLaunch = months.filter(m => m.month >= 0);
+  const cumData = postLaunch.map(m => m.cumulativeFounderFunding);
+  const max = cumulativeFounderFunding || 1;
   
   return (
     <div className="bg-white rounded-lg shadow p-4">
@@ -99,7 +174,7 @@ function SimpleSVGChart({ data, max, color, negColor, label, showZero, invert })
       })}
       {showZero && <line x1={padL} x2={w - padR} y1={zeroY} y2={zeroY} stroke="#9ca3af" />}
       {[0, 11, 23, 35].map(i => (
-        <text key={i} x={scaleX(i)} y={h - 5} textAnchor="middle" className="text-xs fill-gray-500">M{i + 1}</text>
+        <text key={i} x={scaleX(i)} y={h - 5} textAnchor="middle" className="text-xs fill-gray-500">M{i}</text>
       ))}
       <path d={path} fill="none" stroke={color} strokeWidth="2.5" />
       {[0, 11, 23, 35].map(i => {
