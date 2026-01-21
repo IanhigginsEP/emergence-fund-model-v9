@@ -1,44 +1,128 @@
-# Config Files
+# Config Directory
 
-Configuration files for the fund model. Edit these to change assumptions.
+All editable model inputs and configuration parameters.
 
 ## Files
 
 ### assumptions.js
-**Primary config file** - Contains all editable inputs:
-- `TIMELINE`: Model start, launch date, projection months
-- `FUNDING`: Starting cash ($367K)
-- `PERSONNEL`: Salaries for Ian, Paul, Lewis, Emma, Adrian, Chairman
-- `OPEX`: Marketing, travel, compliance, office costs
-- `FUND_ECONOMICS`: Fee rates, returns, public weight
-- `SHAREHOLDER_LOAN`: Initial items and repayment terms
-- `CAPITAL`: GP organic raise schedule, BDM, Broker settings
-- `REDEMPTIONS`: Schedule (when enabled)
-- `DEFAULT_ASSUMPTIONS`: Flattened version consumed by engine.js
+**Main configuration file** - All model inputs in one place
+
+**Structure:**
+- `TIMELINE` - Model dates and projection length
+- `FUNDING` - Starting cash
+- `PERSONNEL` - All staff salaries and timing
+- `OPEX` - Operating expenses
+- `FUND_ECONOMICS` - Fee rates and returns
+- `REVENUE` - Revenue recognition settings
+- `SHAREHOLDER_LOAN` - Initial loan items and terms
+- `CAPITAL` - Capital raise sources (GP, BDM, Broker)
+- `SHARE_CLASSES` - Fee structures by class
+- `REDEMPTIONS` - Redemption schedule
+- `DEFAULT_ASSUMPTIONS` - Flattened version for engine
+
+### Key Parameters
+
+#### Timeline
+| Parameter | Default | Description |
+|-----------|---------|-------------|
+| modelStartDate | 2025-03-01 | When cost tracking begins |
+| launchDate | 2026-02-01 | Fund launch (M0) |
+| projectionMonths | 36 | Post-launch months |
+| preLaunchMonths | 11 | Pre-launch months |
+
+#### Personnel
+| Role | Pre-BE | Post-BE | Start Month |
+|------|--------|---------|-------------|
+| Ian | $5,000 | $10,000 | Always (roll-up) |
+| Paul | $5,000 | $10,000 | Always (cash draw by default) |
+| Lewis | $7,000 | - | M-6 (Aug 2025), 12 months |
+| EA | $1,000 | $1,000 | M0 |
+| Adrian | $1,667 | $1,667 | M-6 |
+| Chairman | $5,000/qtr | $5,000/qtr | M4 |
+
+#### Operating Expenses
+| Item | Pre-BE | Post-BE |
+|------|--------|---------|
+| Marketing | $2,000 | $2,000 |
+| Travel | $2,000 | $2,000 |
+| Office/IT | $1,200 | $1,200 |
+| Compliance | $6,500 | $6,500 |
+| Setup Cost | $10,000 (M0 only) | - |
+
+#### BDM Economics
+| Parameter | Default | Description |
+|-----------|---------|-------------|
+| bdmCapitalStartMonth | 7 | When BDM starts raising |
+| bdmMonthlyCapital | $500,000 | Monthly raise amount |
+| bdmRetainer | $0 | Monthly retainer fee |
+| bdmRevSharePct | 0% | Share of mgmt fee on BDM AUM |
+| bdmCommissionRate | 0% | Trailing commission on raises |
+| bdmTrailingMonths | 12 | Duration of trailing commission |
+
+#### Broker Economics
+| Parameter | Default | Description |
+|-----------|---------|-------------|
+| brokerCapitalStartMonth | 3 | When Broker starts |
+| brokerMonthlyCapital | $500,000 | Monthly raise amount |
+| brokerRetainer | $0 | Monthly retainer fee |
+| brokerCommissionRate | 1% | Trailing commission rate |
+| brokerTrailingMonths | 12 | Duration of trailing commission |
 
 ### scenarios.js
-Preset scenarios with multipliers/overrides:
-- **Base**: Standard assumptions (14% return)
-- **Downside**: 50% capital multiplier, 7% return
-- **Upside 1**: 25% more capital
-- **Upside 2**: 50% more capital
+**Preset scenario definitions**
+
+| Scenario | Description | Capital Mult | Return |
+|----------|-------------|--------------|--------|
+| Base | Standard case | 1.0 | 14% |
+| Downside | Stressed | 0.5 | 7% |
+| Upside 1 | BDM performs | 1.0 | 14% + BDM 10% |
+| Upside 2 | BDM exceeds | 1.0 | 14% + BDM 20% |
 
 ### capital.js
-Capital raise schedule by source and month:
-- GP Organic: Different rates for M0-3, M4-11, M12+
-- BDM: Start month, monthly amount
-- Broker: Start month, monthly amount, commission rate
+**Monthly capital raise schedule**
+
+Generates array of 47 objects (M-11 to M35):
+```javascript
+{
+  month: 0,
+  gpOrganic: 2000000,
+  bdmRaise: 0,
+  brokerRaise: 500000,
+  redemption: 0
+}
+```
+
+**Capital Sources by Period:**
+- M0-M3: $2M/mo GP organic
+- M4-M11: $3M/mo GP organic
+- M12+: $2.5M/mo GP organic
+- M3+: $500K/mo Broker
+- M7+: $500K/mo BDM
+
+**Default Redemptions (when enabled):**
+- M25: $2M
+- M31: $3M
 
 ### share-classes.js
-PPM-compliant share class definitions:
-- Founder Class: 0% mgmt fee, 0% perf fee
-- Class A: 1.5% mgmt, 17.5% carry, 60/40 public/private
-- Class B: 1.5% mgmt, 17.5% carry, 100% private
-- Class C: 1.5% mgmt, 17.5% carry, 100% public
+**PPM-compliant share class definitions**
 
-## Making Changes
+| Class | Mgmt Fee | Carry | Public Weight |
+|-------|----------|-------|---------------|
+| Founder | 0% | 0% | 60% |
+| Class A | 1.5% | 17.5% | 60% |
+| Class B | 1.5% | 17.5% | 0% (all private) |
+| Class C | 1.5% | 17.5% | 100% (all public) |
 
-1. Edit the relevant config file
-2. Test locally by refreshing the browser
-3. Verify reconciliations pass on Dashboard
-4. Commit with descriptive message
+## How to Edit
+
+1. **Change a default value**: Edit the appropriate property in `assumptions.js`
+2. **Add a new scenario**: Add entry to `presetScenarios` in `scenarios.js`
+3. **Change capital schedule**: Modify logic in `generateCapitalInputs()` in `capital.js`
+4. **Adjust redemptions**: Edit `REDEMPTIONS.schedule` array in `assumptions.js`
+
+## Notes
+
+- All months are relative to fund launch (M0 = February 2026)
+- Negative months (M-11 to M-1) are pre-launch
+- Lewis duration "12 months" includes pre-launch months
+- Paul Cash Draw is ON by default (cash expense, not rolled up)
