@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Emergence Partners Fund P&L Model v9.5</title>
+  <title>Emergence Partners Fund P&L Model v10.0</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js"></script>
@@ -12,7 +12,6 @@
     @media print { .no-print { display: none !important; } }
     .collapsible { max-height: 0; overflow: hidden; transition: max-height 0.3s ease-out; }
     .collapsible.open { max-height: 2000px; }
-    /* Frozen column A (sticky left) and row 1 (sticky top) */
     .freeze-table { position: relative; }
     .freeze-table thead tr { position: sticky; top: 0; z-index: 20; }
     .freeze-table th:first-child, .freeze-table td:first-child { position: sticky; left: 0; z-index: 10; }
@@ -51,6 +50,7 @@
   <script src="ui/Timeline.js" type="text/babel"></script>
   <script src="ui/Waterfall.js" type="text/babel"></script>
   <script src="ui/WhatIf.js" type="text/babel"></script>
+  <script src="ui/BalanceSheet.js" type="text/babel"></script>
   
   <!-- 4. Main App Shell -->
   <script type="text/babel">
@@ -93,6 +93,7 @@
         { id: 'dashboard', label: 'Dashboard' },
         { id: 'scenarios', label: '🎯 Scenarios' },
         { id: 'cashflow', label: 'Cash Flow' },
+        { id: 'balancesheet', label: '📋 Balance Sheet' },
         { id: 'charts', label: '📊 Charts' },
         { id: 'assumptions', label: 'Assumptions' },
         { id: 'recoverables', label: 'Recoverables' },
@@ -104,7 +105,7 @@
             <div className="flex justify-between items-center">
               <div>
                 <h1 className="text-2xl font-bold text-gray-800">
-                  Emergence Partners Fund Model <span className="text-green-600">v9.5</span>
+                  Emergence Partners Fund Model <span className="text-green-600">v10.0</span>
                   <span className="ml-2 text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded">LP-READY</span>
                 </h1>
                 <p className="text-sm text-gray-500">24-Month Projection • $367K Starting Pot • All USD</p>
@@ -156,6 +157,10 @@
             </div>
           )}
           
+          {tab === 'balancesheet' && FM.BalanceSheet && (
+            <FM.BalanceSheet model={model} />
+          )}
+          
           {tab === 'charts' && (
             <div className="space-y-4">
               <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg p-3 mb-4">
@@ -186,7 +191,7 @@
             <span className="text-green-600"> Green = Revenue</span> | 
             <span className="text-purple-600"> Purple = Carry</span> | 
             <span className="text-red-600"> Red = Expenses</span> | 
-            <span className="text-amber-600"> Amber = Funding</span>
+            <span className="text-amber-600"> Amber = Funding/SL</span>
           </div>
         </div>
       );
