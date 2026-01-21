@@ -1,6 +1,6 @@
 // model/engine.js - Core P&L calculation loop
-// v10.20: CRITICAL FIX - M0 now properly starts at $367K Stone Park pot
-// Previous bug: M0 inherited closingCash=0 from M-1, causing all cash values to be wrong
+// v10.21: CRITICAL FIX - Founder funding = peak utilization of Stone Park pot
+// The $367K IS founder capital. Any usage of it is founder funding utilized.
 
 window.FundModel = window.FundModel || {};
 
@@ -65,10 +65,14 @@ window.FundModel.runModel = function(assumptions, capitalInputs, returnMult, bdm
   let breakEvenMonth = null;
   let rollingEBITDA = [0, 0, 0];
   let cumulativeCarryPrivate = 0, cumulativeCarryPublic = 0;
-  let cumulativeFounderFunding = 0, cumulativeBDMAUM = 0;
+  let cumulativeBDMAUM = 0;
   let cumulativeGPCommit = 0, cumulativeLPCapital = 0;
   
-  // CRITICAL: Shareholder loan starts at pre-launch costs ($126K), NOT affecting starting cash
+  // Track lowest cash point for founder funding calculation
+  let lowestCashAmount = startingCashUSD;
+  let lowestCashMonth = 0;
+  
+  // CRITICAL: Shareholder loan starts at pre-launch costs ($126K)
   const preLaunchCosts = window.FundModel.SHAREHOLDER_LOAN?.preLaunchCosts?.total || 126000;
   let shareholderLoanBalance = preLaunchCosts;
   
@@ -82,10 +86,9 @@ window.FundModel.runModel = function(assumptions, capitalInputs, returnMult, bdm
     
     const prev = months.length > 0 ? months[months.length - 1] : {
       closingAUM: 0, 
-      closingCash: 0, // Pre-launch cash is tracked separately
+      closingCash: 0,
       cumulativeCapital: 0,
       cumulativeBDMAUM: 0, 
-      cumulativeFounderFunding: 0, 
       shareholderLoanBalance: shareholderLoanBalance,
       cumulativeGPCommit: 0, 
       cumulativeLPCapital: 0,
@@ -178,7 +181,6 @@ window.FundModel.runModel = function(assumptions, capitalInputs, returnMult, bdm
     // Other personnel
     const eaActive = m >= assumptions.eaStartMonth;
     const eaSalaryCost = eaActive ? eaSalary : 0;
-    // Chairman - quarterly payment only (Adrian IS the Chairman)
     const chairmanActive = m >= assumptions.chairmanStartMonth && ((m - assumptions.chairmanStartMonth) % 3 === 0);
     const chairmanCost = chairmanActive ? assumptions.chairmanSalary : 0;
     
@@ -247,42 +249,40 @@ window.FundModel.runModel = function(assumptions, capitalInputs, returnMult, bdm
       if (breakEvenMonth === null && rollingEBITDA.every(e => e > 0) && m >= 2) breakEvenMonth = m;
     }
     
-    // ========================================================================
-    // CRITICAL FIX v10.20: Cash flow logic with CORRECT M0 starting point
-    // ========================================================================
+    // Cash flow logic
     let closingCash;
-    let founderFundingRequired = 0;
+    let additionalFundingRequired = 0;
     
     if (isPreLaunch) {
-      // Pre-launch: Expenses tracked in shareholder loan, cash stays at 0
       closingCash = 0;
       preLaunchExpenses += totalExpenses;
       shareholderLoanBalance = prev.shareholderLoanBalance + ianAccrual + paulAccrual + marketingAccrual + travelAccrual;
     } else {
-      // Post-launch cash flow calculation
-      // CRITICAL FIX: M0 starts at Stone Park pot ($367K), NOT at prev.closingCash (which is 0 from M-1)
       const openingCash = (m === 0) ? startingCashUSD : prev.closingCash;
       const netCashFlow = ebitda;
       closingCash = openingCash + netCashFlow;
       
-      // Track founder funding: delta of deficit (what's NEW this month)
-      const prevDeficit = (m === 0 || prev.closingCash >= 0) ? 0 : Math.abs(prev.closingCash);
-      const currDeficit = closingCash < 0 ? Math.abs(closingCash) : 0;
-      founderFundingRequired = currDeficit > prevDeficit ? currDeficit - prevDeficit : 0;
+      // Track additional funding if cash goes negative
+      if (closingCash < 0) {
+        additionalFundingRequired = Math.abs(closingCash);
+        closingCash = 0; // Assume founder injects to keep at 0
+      }
+      
+      // Track lowest cash point
+      if (closingCash < lowestCashAmount) {
+        lowestCashAmount = closingCash;
+        lowestCashMonth = m;
+      }
       
       // Shareholder loan accumulation (post-launch accruals)
       shareholderLoanBalance = prev.shareholderLoanBalance + ianAccrual + paulAccrual + marketingAccrual + travelAccrual;
     }
     
-    // Cumulative founder funding accumulates correctly
-    cumulativeFounderFunding = prev.cumulativeFounderFunding + founderFundingRequired;
-    
     if (isPreLaunch) {
       preLaunchData.push({ 
         month: m, label: 'M'+m, expenses: totalExpenses, 
         lewisSalary, ianSalary: ianSalaryAmount, paulSalary: paulSalaryAmount, 
-        closingCash, founderFundingRequired,
-        shareholderLoanBalance 
+        closingCash, shareholderLoanBalance 
       });
     }
     
@@ -309,19 +309,23 @@ window.FundModel.runModel = function(assumptions, capitalInputs, returnMult, bdm
       brokerRetainerExpense, brokerTrailingComm, totalBrokerExpense,
       totalOpex, totalOpexCash, totalCashExpenses, totalExpenses, ebitda, ebt, netIncome, 
       netCashFlow: isPreLaunch ? 0 : ebitda,
-      closingCash, founderFundingRequired, cumulativeFounderFunding, shareholderLoanBalance,
+      closingCash, additionalFundingRequired, shareholderLoanBalance,
     });
   });
   
-  // Calculate cash low point
-  const postLaunch = months.filter(m => !m.isPreLaunch);
-  const cashLowMonth = postLaunch.reduce((low, m) => 
-    (m.closingCash < low.closingCash) ? m : low, postLaunch[0] || { closingCash: 0, month: 0 });
+  // CRITICAL: Calculate founder funding utilized = starting pot - lowest cash point
+  // This is how much of the $367K was "at risk" / utilized
+  const founderFundingUtilized = startingCashUSD - lowestCashAmount;
+  
+  // Additional funding = sum of any amounts where cash went negative
+  const totalAdditionalFunding = months.reduce((sum, m) => sum + (m.additionalFundingRequired || 0), 0);
   
   return { 
     months, preLaunchData, preLaunchExpenses, breakEvenMonth, 
-    cumulativeFounderFunding, startingCashUSD,
-    cashLow: { month: cashLowMonth.month, amount: cashLowMonth.closingCash },
+    startingCashUSD,
+    founderFundingUtilized,  // NEW: Peak utilization of Stone Park pot
+    totalAdditionalFunding,   // NEW: Additional funding beyond $367K (if any)
+    cashLow: { month: lowestCashMonth, amount: lowestCashAmount },
     shareholderLoanInitial: preLaunchCosts,
   };
 };
