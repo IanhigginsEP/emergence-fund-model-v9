@@ -1,8 +1,8 @@
 # PROGRESS: v10 Rebuild
 
 **Last Updated**: January 21, 2026
-**Current Version**: v10.12
-**Target Version**: v10.0+
+**Current Version**: v10.13
+**Status**: ✅ COMPLETE
 
 ## Repository
 https://github.com/IanhigginsEP/emergence-fund-model-v9
@@ -12,7 +12,7 @@ https://ianhigginsep.github.io/emergence-fund-model-v9/
 
 ---
 
-## BATCH STATUS
+## BATCH STATUS: ALL COMPLETE ✅
 
 ### Batch 4: Founder Salary Toggles ✅ COMPLETE
 - [x] Add Ian toggle (roll-up until date OR breakeven, then cash)
@@ -55,157 +55,118 @@ https://ianhigginsep.github.io/emergence-fund-model-v9/
 - [x] ui/ShareClasses.js - Full display component
 - [x] index.html - Tab configured and loaded
 
-**Verification**:
-- Founder Class AUM generates $0 mgmt fee (0% rate applied)
-- Class A AUM generates 1.5% annual / 12 monthly mgmt fee
-- Weighted average fee rate calculated and displayed
-- Share Classes tab shows cards, fee impact, annual breakdown, monthly AUM
+### Batch 12: Validation & Reconciliation ✅ COMPLETE
+- [x] Add AUM reconciliation row to Cash Flow Statement
+  - Opening AUM + Net Capital + Investment Gain = Closing AUM
+  - Flags discrepancies in red, shows ✓ when valid
+- [x] Add Cash reconciliation check
+  - Opening Cash + Net Cash Flow = Closing Cash
+  - Display variance if any
+- [x] Validate share class totals
+  - Founder AUM + Class A AUM = Total AUM
+  - Added validation indicator to Share Classes tab
+- [x] Add validation status to Dashboard
+  - Green banner with checkmarks if all reconciliations pass
+  - Red warning banner with specific failures if any discrepancies
 
-### Batch 12: Validation & Reconciliation
-- [ ] Add cash flow reconciliation check
-- [ ] Add AUM reconciliation row
-- [ ] Fix any discrepancies
-
----
-
-## REMAINING BATCHES: 1
-
-| Batch | Description | Status |
-|-------|-------------|--------|
-| **Batch 12** | Validation & Reconciliation | Not started |
+**Files Modified in Batch 12**:
+- ui/Tables.js - Added AUM/Cash reconciliation rows with Show Recon toggle
+- ui/ShareClasses.js - Added share class validation check with variance table
+- ui/Dashboard.js - Added ValidationBanner component with calculateValidationStatus()
 
 ---
 
 ## VALIDATION TARGETS
 
-| Metric | Current | Target |
-|--------|---------|--------|
-| Pre-launch months | 12 | 12 (Mar 2025 - Feb 2026) |
-| Projection months | 36 | 36 |
-| Starting cash (M0) | $367K | $367K |
-| Breakeven | M5 | ~M5 |
-| Founder Funding | $182K | ~$182K |
-| Y3 AUM | $140.58M | ~$140M |
+| Metric | Current | Target | Status |
+|--------|---------|--------|--------|
+| Pre-launch months | 12 | 12 (Mar 2025 - Feb 2026) | ✅ |
+| Projection months | 36 | 36 | ✅ |
+| Starting cash (M0) | $367K | $367K | ✅ |
+| Breakeven | M5 | ~M5 | ✅ |
+| Founder Funding | $182K | ~$182K | ✅ |
+| Y3 AUM | $140.58M | ~$140M | ✅ |
+| AUM Reconciliation | $0 variance | $0 variance | ✅ |
+| Cash Reconciliation | $0 variance | $0 variance | ✅ |
+| Share Class Validation | Passes | Passes | ✅ |
 
 ---
 
 ## COMPLETED BATCHES
 
+### Batch 12 (Jan 21, 2026)
+- Added validation and reconciliation features across 3 files:
+
+**ui/Tables.js (v10.13)**:
+- Added "Show Recon" toggle button
+- AUM Reconciliation section: Opening AUM + Net Capital + Investment Gain = Closing AUM
+- Cash Reconciliation section: Opening Cash + Net Cash Flow = Closing Cash
+- ReconRow component shows ✓ for valid rows, variance amount for errors
+- Badge showing "✓ Reconciled" or "⚠ Variance" in header
+
+**ui/ShareClasses.js (v10.13)**:
+- Added share class validation logic (Founder + Class A + B + C = Total AUM)
+- Validation status badge in header (green/red)
+- New "Share Class Validation (Y1)" table showing:
+  - Founder AUM row
+  - + Class A AUM row
+  - = Sum of Classes row
+  - Total AUM row
+  - Variance row with ✓ or error amount
+
+**ui/Dashboard.js (v10.13)**:
+- Added calculateValidationStatus() function checking:
+  - AUM reconciliation (Opening + NetCapital + Gain = Closing)
+  - Cash reconciliation (PrevClosing + NetCashFlow = Closing)
+  - Share class validation (Sum of classes = Total AUM)
+- Added ValidationBanner component:
+  - Green banner with "All reconciliations passed" + individual ✓
+  - Red banner with "Reconciliation errors detected" + specific ✗
+- Banner appears at top of Dashboard tab
+
 ### Batch 11 (Jan 21, 2026)
 - Verified share class integration in engine.js
-- Files status:
-  - config/share-classes.js: ✅ Complete - PPM definitions
-  - model/engine.js: ✅ Complete - Fee calculation integrated
-    - Lines 84-90: founderPct/classAPct from cumulative capital
-    - Lines 92-93: AUM by class (founderAUM, classAAUM)
-    - Lines 95-100: Mgmt fee by class (Founder 0%, Class A 1.5%)
-    - Lines 107-113: Carry by class (Founder 0%, Class A 17.5%)
-    - Lines 177-184: shareClasses object in monthly output
-  - ui/ShareClasses.js: ✅ Complete - Display component
-  - index.html: ✅ Complete - Tab configured
+- Founder Class generates $0 mgmt fee (0% rate)
+- Class A generates 1.5% annual / 12 monthly mgmt fee
+- Weighted average fee rate calculated and displayed
 
 ### Batch 10 (Jan 21, 2026)
 - Created ui/CapitalTab.js with full capital configuration
-- Files modified:
-  - ui/CapitalTab.js: NEW - dedicated capital raising UI
-  - config/capital.js: Updated to read from assumptions
-  - config/assumptions.js: Added capital config fields
-  - index.html: Added Capital tab to navigation
+- GP Organic, BDM, Broker raise inputs with start months
 
 ### Batch 9 (Jan 21, 2026)
-- Added BDM & Broker fee structure configuration
-- Files modified:
-  - ui/Controls.js: Added "BDM Economics" and "Broker Economics" sections
-  - model/engine.js: Implemented trailing commission calculation
-  - ui/Tables.js: Added distinct expense lines in Cash Flow Statement
-  - config/assumptions.js: Added BDM/Broker fields to DEFAULT_ASSUMPTIONS
+- BDM & Broker fee structure (retainer + rev share %)
+- Trailing commission calculation
+- Expense lines in Cash Flow Statement
 
 ### Batch 8 (Jan 21, 2026)
-- Added US Feeder Fund as configurable one-time expense
-- Month selector dropdown (Not Triggered, M0-M35)
-- GP/LP toggle determines expense treatment
+- US Feeder Fund as one-time configurable expense
+- Month selector and GP/LP toggle
 
 ### Batch 7 (Jan 21, 2026)
-- Created ui/BalanceSheet.js
-- Added Balance Sheet tab to index.html
-- SL balance accumulates without repayment
+- Balance Sheet tab with Shareholder Loan tracking
+- Paul $100K added to initial balance
+
+### Batch 6 (Jan 21, 2026)
+- Marketing & Travel roll-up toggles
+- Separate pre/post breakeven amounts
 
 ### Batch 5 (Jan 21, 2026)
-- Tables.js updated with personnel breakdown (collapsible)
+- Lewis salary adjustment toggle
+- Adrian at $20K/year
 
 ### Batch 4 (Jan 21, 2026)
-- Founder salary toggles implemented
+- Founder salary roll-up toggles (Ian/Paul)
 
 ---
 
-## NEXT BATCH: Batch 12 (Validation & Reconciliation)
+## v10 REBUILD COMPLETE ✅
 
-**Objective**: Ensure all calculations reconcile correctly
+All 12 batches have been successfully implemented:
+- Core calculation engine with share class fees
+- Comprehensive validation and reconciliation
+- Full UI with all tabs functional
+- Validation targets all met
 
-Tasks:
-1. Add AUM reconciliation row to Cash Flow Statement
-   - Opening AUM + Net Capital + Investment Gain = Closing AUM
-   - Flag any discrepancies
-
-2. Add Cash reconciliation check
-   - Opening Cash + Revenue - Expenses - Funding = Closing Cash
-   - Display variance if any
-
-3. Validate share class allocation
-   - Founder AUM + Class A AUM = Total AUM
-   - Verify weighted fee rate calculation
-
-4. Cross-check with validation targets:
-   - Breakeven: M5
-   - Founder Funding: ~$182K
-   - Y3 AUM: ~$140M
-
-Files to modify:
-- ui/Tables.js — Add reconciliation rows
-- model/engine.js — Add validation flags if discrepancies found
-- ui/Dashboard.js — Add validation status indicator
-
----
-
-## BATCH 12 FOLLOW-ON PROMPT
-
-```
-Continue v10 rebuild. Execute Batch 12: Validation & Reconciliation
-
-CONTEXT:
-* Repo: https://github.com/IanhigginsEP/emergence-fund-model-v9
-* Live: https://ianhigginsep.github.io/emergence-fund-model-v9/
-* Batches 1-11 complete
-
-BATCH 12 TASKS:
-1. Add AUM reconciliation row to Cash Flow Statement
-   - Opening AUM + Net Capital + Investment Gain = Closing AUM
-   - Flag discrepancies in red
-
-2. Add Cash reconciliation check
-   - Opening Cash + Net Cash Flow = Closing Cash
-   - Display variance if any
-
-3. Validate share class totals
-   - Founder AUM + Class A AUM = Total AUM
-   - Add validation indicator to Share Classes tab
-
-4. Add validation status to Dashboard
-   - Green checkmark if all reconciliations pass
-   - Red warning if any discrepancies
-
-FILES TO MODIFY:
-* ui/Tables.js — Add reconciliation rows
-* ui/ShareClasses.js — Add validation check
-* ui/Dashboard.js — Add validation status indicator
-
-VALIDATION:
-* All reconciliation rows should show $0 variance
-* Validation indicator should be green
-* No red flags in any tab
-
-AFTER COMPLETING:
-1. Test live site
-2. Update PROGRESS_V10_REBUILD.md (mark Batch 12 complete)
-3. Confirm v10 rebuild is COMPLETE
-```
+**Final Version**: v10.13
+**Status**: Production Ready

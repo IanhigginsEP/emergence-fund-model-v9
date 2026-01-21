@@ -1,5 +1,5 @@
 // ui/Dashboard.js - Summary KPI cards, Cash Flow, and KPI Table
-// v9.5: KPI Table positioned below Cash Flow table on dashboard
+// v10.13: Added validation status indicator (green checkmark / red warning)
 
 window.FundModel = window.FundModel || {};
 
@@ -29,8 +29,15 @@ window.FundModel.Dashboard = function Dashboard({ model, scenarioName, onResetSc
   const y1EBITDA = y1Months.reduce((sum, m) => sum + (m.ebitda || 0), 0);
   const totalCarry = summary?.totals?.totalCarry || 0;
   
+  // Calculate validation status
+  const postLaunch = months ? months.filter(m => !m.isPreLaunch) : [];
+  const validationStatus = calculateValidationStatus(postLaunch, startingPot);
+  
   return (
     <div className="space-y-4">
+      {/* Validation Status Banner */}
+      <ValidationBanner status={validationStatus} />
+      
       {scenarioName !== 'Base' && (
         <div className="rounded-lg shadow p-3 flex justify-between items-center bg-blue-50 border border-blue-200">
           <span className="text-sm font-medium">📊 Viewing <strong>{scenarioName}</strong> scenario</span>
@@ -73,6 +80,63 @@ window.FundModel.Dashboard = function Dashboard({ model, scenarioName, onResetSc
     </div>
   );
 };
+
+function calculateValidationStatus(postLaunch, startingCash) {
+  let aumOk = true, cashOk = true, shareClassOk = true;
+  
+  postLaunch.forEach((m, idx) => {
+    // AUM check: Opening + Net Capital + Gain = Closing
+    const aumVariance = Math.abs((m.closingAUM || 0) - ((m.openingAUM || 0) + (m.netCapital || 0) + (m.investmentGain || 0)));
+    if (aumVariance > 1) aumOk = false;
+    
+    // Cash check: Previous Closing + Net Cash Flow = Current Closing
+    const prevCash = idx > 0 ? (postLaunch[idx - 1].closingCash || 0) : startingCash;
+    const cashVariance = Math.abs((m.closingCash || 0) - (prevCash + (m.netCashFlow || 0)));
+    if (cashVariance > 1) cashOk = false;
+    
+    // Share class check: Sum of classes = Total AUM
+    if (m.shareClasses) {
+      const sumClasses = (m.shareClasses.founder?.aum || 0) + (m.shareClasses.classA?.aum || 0) + 
+                        (m.shareClasses.classB?.aum || 0) + (m.shareClasses.classC?.aum || 0);
+      const scVariance = Math.abs((m.closingAUM || 0) - sumClasses);
+      if (scVariance > 1) shareClassOk = false;
+    }
+  });
+  
+  return { aumOk, cashOk, shareClassOk, allOk: aumOk && cashOk && shareClassOk };
+}
+
+function ValidationBanner({ status }) {
+  if (status.allOk) {
+    return (
+      <div className="rounded-lg p-3 flex items-center justify-between bg-green-50 border border-green-200">
+        <div className="flex items-center gap-2">
+          <span className="text-green-600 text-lg">✓</span>
+          <span className="text-sm font-medium text-green-800">All reconciliations passed</span>
+        </div>
+        <div className="flex gap-3 text-xs">
+          <span className="text-green-600">✓ AUM</span>
+          <span className="text-green-600">✓ Cash</span>
+          <span className="text-green-600">✓ Share Classes</span>
+        </div>
+      </div>
+    );
+  }
+  
+  return (
+    <div className="rounded-lg p-3 flex items-center justify-between bg-red-50 border border-red-200">
+      <div className="flex items-center gap-2">
+        <span className="text-red-600 text-lg">⚠</span>
+        <span className="text-sm font-medium text-red-800">Reconciliation errors detected</span>
+      </div>
+      <div className="flex gap-3 text-xs">
+        <span className={status.aumOk ? 'text-green-600' : 'text-red-600'}>{status.aumOk ? '✓' : '✗'} AUM</span>
+        <span className={status.cashOk ? 'text-green-600' : 'text-red-600'}>{status.cashOk ? '✓' : '✗'} Cash</span>
+        <span className={status.shareClassOk ? 'text-green-600' : 'text-red-600'}>{status.shareClassOk ? '✓' : '✗'} Share Classes</span>
+      </div>
+    </div>
+  );
+}
 
 function KPICard({ label, value, color, border }) {
   const colorClasses = { green: 'text-green-600', red: 'text-red-600', purple: 'text-purple-600', amber: 'text-amber-600', blue: 'text-blue-600', default: 'text-gray-800' };

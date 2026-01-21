@@ -1,5 +1,5 @@
 // ui/Tables.js - Monthly P&L and Cashflow tables with frozen columns
-// v10.9: Added BDM/Broker expense lines in Cashflow Statement
+// v10.13: Added AUM and Cash reconciliation rows for validation
 
 window.FundModel = window.FundModel || {};
 
@@ -40,17 +40,54 @@ window.FundModel.CashflowStatement = function CashflowStatement({ model, showPer
   const { months } = model;
   const postLaunch = months ? months.filter(m => !m.isPreLaunch) : [];
   const [expanded, setExpanded] = React.useState(showPersonnel || false);
+  const [showRecon, setShowRecon] = React.useState(false);
+  
+  // Calculate reconciliation data
+  const reconData = postLaunch.map((m, idx) => {
+    const prevMonth = idx > 0 ? postLaunch[idx - 1] : null;
+    const openingAUM = m.openingAUM || 0;
+    const netCapital = m.netCapital || 0;
+    const investmentGain = m.investmentGain || 0;
+    const closingAUM = m.closingAUM || 0;
+    const aumVariance = closingAUM - (openingAUM + netCapital + investmentGain);
+    
+    const openingCash = prevMonth ? (prevMonth.closingCash || 0) : (model.startingCashUSD || 367000);
+    const netCashFlow = m.netCashFlow || 0;
+    const closingCash = m.closingCash || 0;
+    const cashVariance = closingCash - (openingCash + netCashFlow);
+    
+    return { aumVariance, cashVariance };
+  });
+  
+  const hasAumVariance = reconData.some(r => Math.abs(r.aumVariance) > 1);
+  const hasCashVariance = reconData.some(r => Math.abs(r.cashVariance) > 1);
   
   return (
     <div className="bg-white rounded-lg shadow p-4 overflow-x-auto">
       <div className="flex justify-between items-center mb-3">
-        <h2 className="font-semibold">Monthly Cashflow Statement</h2>
-        <button 
-          onClick={() => setExpanded(!expanded)}
-          className="text-xs px-2 py-1 bg-gray-100 hover:bg-gray-200 rounded"
-        >
-          {expanded ? 'Hide Details' : 'Show Details'}
-        </button>
+        <div className="flex items-center gap-3">
+          <h2 className="font-semibold">Monthly Cashflow Statement</h2>
+          {!hasAumVariance && !hasCashVariance && (
+            <span className="text-xs px-2 py-1 bg-green-100 text-green-700 rounded-full">✓ Reconciled</span>
+          )}
+          {(hasAumVariance || hasCashVariance) && (
+            <span className="text-xs px-2 py-1 bg-red-100 text-red-700 rounded-full">⚠ Variance</span>
+          )}
+        </div>
+        <div className="flex gap-2">
+          <button 
+            onClick={() => setShowRecon(!showRecon)}
+            className={`text-xs px-2 py-1 rounded ${showRecon ? 'bg-blue-500 text-white' : 'bg-gray-100 hover:bg-gray-200'}`}
+          >
+            {showRecon ? 'Hide Recon' : 'Show Recon'}
+          </button>
+          <button 
+            onClick={() => setExpanded(!expanded)}
+            className="text-xs px-2 py-1 bg-gray-100 hover:bg-gray-200 rounded"
+          >
+            {expanded ? 'Hide Details' : 'Show Details'}
+          </button>
+        </div>
       </div>
       <table className="w-full text-xs freeze-table">
         <thead>
@@ -60,6 +97,18 @@ window.FundModel.CashflowStatement = function CashflowStatement({ model, showPer
           </tr>
         </thead>
         <tbody>
+          {/* AUM Section */}
+          {showRecon && (
+            <>
+              <tr className="bg-blue-50"><td colSpan={postLaunch.length+1} className="py-1 px-2 text-xs font-medium text-blue-800 sticky left-0">AUM Reconciliation</td></tr>
+              <TableRow label="Opening AUM" months={postLaunch} field="openingAUM" fmt={fmt} color="blue" />
+              <TableRow label="+ Net Capital" months={postLaunch} field="netCapital" fmt={fmt} color="blue" />
+              <TableRow label="+ Investment Gain" months={postLaunch} field="investmentGain" fmt={fmt} color="blue" />
+              <TableRow label="= Closing AUM" months={postLaunch} field="closingAUM" fmt={fmt} bold />
+              <ReconRow label="AUM Variance" months={postLaunch} reconData={reconData} field="aumVariance" fmt={fmt} />
+            </>
+          )}
+          
           <TableRow label="Operating Revenue" months={postLaunch} field="operatingRevenue" fmt={fmt} color="green" fallback="mgmtFee" />
           
           {/* Personnel Breakdown (collapsible) */}
@@ -100,6 +149,14 @@ window.FundModel.CashflowStatement = function CashflowStatement({ model, showPer
           <TableRow label="Cumulative Funding" months={postLaunch} field="cumulativeFounderFunding" fmt={fmt} color="amber" bold />
           <TableRow label="Cash Balance" months={postLaunch} field="closingCash" fmt={fmtBracket} dynamic bg="gray" bold />
           
+          {/* Cash Reconciliation */}
+          {showRecon && (
+            <>
+              <tr className="bg-teal-50"><td colSpan={postLaunch.length+1} className="py-1 px-2 text-xs font-medium text-teal-800 sticky left-0">Cash Reconciliation</td></tr>
+              <ReconRow label="Cash Variance" months={postLaunch} reconData={reconData} field="cashVariance" fmt={fmt} />
+            </>
+          )}
+          
           <tr className="bg-purple-100"><td colSpan={postLaunch.length+1} className="py-2 px-2 font-semibold text-purple-800 sticky left-0">Below the Line</td></tr>
           <TableRow label="Carried Interest" months={postLaunch} field="carryRevenue" fmt={fmt} color="purple" bg="purple" fallback="totalCarry" />
           <TableRow label="Ian Salary Accrual" months={postLaunch} field="ianAccrual" fmt={fmt} color="purple" />
@@ -109,7 +166,7 @@ window.FundModel.CashflowStatement = function CashflowStatement({ model, showPer
           <TableRow label="Shareholder Loan" months={postLaunch} field="shareholderLoanBalance" fmt={fmt} color="amber" bg="amber" bold />
         </tbody>
       </table>
-      <p className="text-xs text-gray-500 mt-2">Negatives in brackets • Click 'Show Details' for full breakdown incl. BDM/Broker</p>
+      <p className="text-xs text-gray-500 mt-2">Negatives in brackets • 'Show Recon' for AUM/Cash validation • 'Show Details' for full breakdown</p>
     </div>
   );
 };
@@ -159,6 +216,23 @@ function TableRow({ label, months, field, fmt, color, bg, bold, dynamic, fallbac
         else if (color) colorClass = `text-${color}-600`;
         const display = fmt(val);
         return <td key={m.month} className={`py-1 px-1 text-right font-mono ${colorClass}`}>{val !== 0 ? display : '-'}</td>;
+      })}
+    </tr>
+  );
+}
+
+function ReconRow({ label, months, reconData, field, fmt }) {
+  return (
+    <tr className="border-b bg-gray-100">
+      <td className="py-1 px-2 sticky left-0 z-10 bg-gray-100 font-semibold">{label}</td>
+      {months.map((m, idx) => {
+        const val = reconData[idx]?.[field] || 0;
+        const isOk = Math.abs(val) < 1;
+        return (
+          <td key={m.month} className={`py-1 px-1 text-right font-mono font-bold ${isOk ? 'text-green-600' : 'text-red-600 bg-red-100'}`}>
+            {isOk ? '✓' : fmt(val)}
+          </td>
+        );
       })}
     </tr>
   );
