@@ -1,5 +1,5 @@
 // config/assumptions.js - All editable model inputs
-// v10.9: Added BDM/Broker fee structure fields to DEFAULT_ASSUMPTIONS
+// v10.10: Added capital raising config fields
 
 window.FundModel = window.FundModel || {};
 
@@ -88,19 +88,23 @@ window.FundModel.US_FEEDER = {
 };
 
 window.FundModel.CAPITAL = {
-  gpOrganic: { m0to11: 2500000, m12to35: 2500000 },
+  gpOrganic: { 
+    m0to3: 2000000,   // Launch phase
+    m4to11: 3000000,  // Growth phase
+    m12plus: 2500000, // Mature phase
+  },
   bdm: { 
     startMonth: 7, 
     monthly: 500000, 
-    retainer: 0,        // Monthly retainer amount
-    revSharePct: 0,     // % of mgmt fee on BDM-raised AUM
+    retainer: 0,
+    revSharePct: 0,
   },
   brokerRaise: { 
     startMonth: 3, 
-    monthly: 250000, 
-    retainer: 0,        // Monthly retainer amount
-    commissionRate: 0.01, // Annual commission rate on capital raised
-    trailingMonths: 12,   // Months to apply trailing commission
+    monthly: 500000, 
+    retainer: 0,
+    commissionRate: 0.01,
+    trailingMonths: 12,
   },
 };
 
@@ -158,11 +162,19 @@ window.FundModel.DEFAULT_ASSUMPTIONS = {
   travelRollUp: window.FundModel.OPEX.travel.rollUpToSL,
   compliance: window.FundModel.OPEX.leventus + window.FundModel.OPEX.adminCustodial,
   setupCost: window.FundModel.OPEX.setupCost,
-  // BDM settings
+  // Capital raising config
+  gpOrganicM0to3: window.FundModel.CAPITAL.gpOrganic.m0to3,
+  gpOrganicM4to11: window.FundModel.CAPITAL.gpOrganic.m4to11,
+  gpOrganicM12plus: window.FundModel.CAPITAL.gpOrganic.m12plus,
+  bdmCapitalStartMonth: window.FundModel.CAPITAL.bdm.startMonth,
+  bdmMonthlyCapital: window.FundModel.CAPITAL.bdm.monthly,
+  brokerCapitalStartMonth: window.FundModel.CAPITAL.brokerRaise.startMonth,
+  brokerMonthlyCapital: window.FundModel.CAPITAL.brokerRaise.monthly,
+  // BDM fee settings
   bdmStartMonth: window.FundModel.CAPITAL.bdm.startMonth,
   bdmRetainer: window.FundModel.CAPITAL.bdm.retainer,
   bdmRevSharePct: window.FundModel.CAPITAL.bdm.revSharePct,
-  // Broker settings
+  // Broker fee settings
   brokerStartMonth: window.FundModel.CAPITAL.brokerRaise.startMonth,
   brokerRetainer: window.FundModel.CAPITAL.brokerRaise.retainer,
   brokerCommissionRate: window.FundModel.CAPITAL.brokerRaise.commissionRate,
