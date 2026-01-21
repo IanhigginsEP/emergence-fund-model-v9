@@ -1,5 +1,6 @@
 // model/engine.js - Core P&L calculation loop
-// v10.14: Fix marketing/travel defaults to $2000, add BDM trailing commission
+// v10.15: CRITICAL FIX - M0 starts at EXACTLY $367K, cash CAN go negative
+// Pre-launch costs go to shareholder loan, NOT deducted from starting pot
 
 window.FundModel = window.FundModel || {};
 
@@ -66,18 +67,30 @@ window.FundModel.runModel = function(assumptions, capitalInputs, returnMult, bdm
   let cumulativeCarryPrivate = 0, cumulativeCarryPublic = 0;
   let cumulativeFounderFunding = 0, cumulativeBDMAUM = 0;
   let cumulativeGPCommit = 0, cumulativeLPCapital = 0;
-  let shareholderLoanBalance = window.FundModel.getInitialShareholderLoan();
+  
+  // CRITICAL: Shareholder loan starts at pre-launch costs ($126K), NOT affecting starting cash
+  const preLaunchCosts = window.FundModel.SHAREHOLDER_LOAN?.preLaunchCosts?.total || 126000;
+  let shareholderLoanBalance = preLaunchCosts;
+  
   const preLaunchData = [];
-  let preLaunchCosts = 0;
+  let preLaunchExpenses = 0;
   
   capitalInputs.forEach((inp, idx) => {
     const m = inp.month;
     const isPreLaunch = m < 0;
     const isPostBreakeven = breakEvenMonth !== null && m > breakEvenMonth;
+    
+    // CRITICAL FIX: M0 starts at EXACTLY $367K (Stone Park starting pot)
+    // Pre-launch months track expenses but DON'T deduct from starting cash
     const prev = months.length > 0 ? months[months.length - 1] : {
-      closingAUM: 0, closingCash: startingCashUSD, cumulativeCapital: 0,
-      cumulativeBDMAUM: 0, cumulativeFounderFunding: 0, shareholderLoanBalance,
-      cumulativeGPCommit: 0, cumulativeLPCapital: 0,
+      closingAUM: 0, 
+      closingCash: isPreLaunch ? 0 : startingCashUSD,  // Pre-launch: 0, M0: $367K
+      cumulativeCapital: 0,
+      cumulativeBDMAUM: 0, 
+      cumulativeFounderFunding: 0, 
+      shareholderLoanBalance: shareholderLoanBalance,
+      cumulativeGPCommit: 0, 
+      cumulativeLPCapital: 0,
     };
     
     // Capital
@@ -175,7 +188,7 @@ window.FundModel.runModel = function(assumptions, capitalInputs, returnMult, bdm
     const totalCashSalaries = ianCashExpense + paulCashExpense + lewisSalary + eaSalaryCost + chairmanCost + adrianSalary;
     const totalSalaries = ianSalaryAmount + paulSalaryAmount + lewisSalary + eaSalaryCost + chairmanCost + adrianSalary;
     
-    // OpEx - FIXED: defaults now $2000
+    // OpEx
     const marketingAmount = isPostBreakeven ? (assumptions.marketingPostBE || 2000) : (assumptions.marketingPreBE || 2000);
     const marketingCash = marketingRollUp ? 0 : marketingAmount;
     const marketingAccrual = marketingRollUp ? marketingAmount : 0;
@@ -237,32 +250,46 @@ window.FundModel.runModel = function(assumptions, capitalInputs, returnMult, bdm
       if (breakEvenMonth === null && rollingEBITDA.every(e => e > 0) && m >= 2) breakEvenMonth = m;
     }
     
-    // Cash flow with founder funding logic
-    const netCashFlow = ebitda;
-    let closingCash = prev.closingCash + netCashFlow;
+    // CRITICAL: Cash flow logic
+    // Pre-launch: Expenses go to shareholder loan, NOT cash
+    // Post-launch: Normal cash flow from starting pot
+    let closingCash;
     let founderFundingRequired = 0;
     
-    // At M0 (launch), founders inject to restore starting pot
-    if (m === 0 && closingCash < startingCashUSD) {
-      founderFundingRequired = startingCashUSD - closingCash;
-      closingCash = startingCashUSD;
-      cumulativeFounderFunding += founderFundingRequired;
-    }
-    // After launch, founders inject only if cash goes negative
-    else if (!isPreLaunch && m > 0 && closingCash < 0) {
-      founderFundingRequired = Math.abs(closingCash);
+    if (isPreLaunch) {
+      // Pre-launch: Expenses tracked in shareholder loan, cash stays at 0
       closingCash = 0;
-      cumulativeFounderFunding += founderFundingRequired;
+      preLaunchExpenses += totalExpenses;
+      // Add pre-launch accruals to shareholder loan (beyond initial $126K)
+      shareholderLoanBalance = prev.shareholderLoanBalance + ianAccrual + paulAccrual + marketingAccrual + travelAccrual;
+    } else {
+      // Post-launch: Normal cash flow
+      // M0 starts fresh at $367K (prev.closingCash from initial state)
+      const netCashFlow = ebitda;
+      closingCash = prev.closingCash + netCashFlow;
+      
+      // CRITICAL: Cash CAN go negative - this is informational, not a hard limit
+      // No founder funding injection - the $367K IS the funding
+      // Track negative cash as a warning
+      if (closingCash < 0) {
+        founderFundingRequired = Math.abs(closingCash);
+        // DO NOT reset cash to zero - let it go negative to show the deficit
+      }
+      
+      // Shareholder loan accumulation (post-launch accruals)
+      shareholderLoanBalance = prev.shareholderLoanBalance + ianAccrual + paulAccrual + marketingAccrual + travelAccrual;
     }
     
-    const adjustedClosingCash = closingCash;
-    
-    // Shareholder loan accumulation
-    shareholderLoanBalance = prev.shareholderLoanBalance + ianAccrual + paulAccrual + marketingAccrual + travelAccrual;
+    // Track cumulative founder funding need (informational)
+    cumulativeFounderFunding = prev.cumulativeFounderFunding + founderFundingRequired;
     
     if (isPreLaunch) {
-      preLaunchCosts += totalExpenses;
-      preLaunchData.push({ month: m, label: 'M'+m, expenses: totalExpenses, lewisSalary, ianSalary: ianSalaryAmount, paulSalary: paulSalaryAmount, closingCash: adjustedClosingCash, founderFundingRequired });
+      preLaunchData.push({ 
+        month: m, label: 'M'+m, expenses: totalExpenses, 
+        lewisSalary, ianSalary: ianSalaryAmount, paulSalary: paulSalaryAmount, 
+        closingCash, founderFundingRequired,
+        shareholderLoanBalance 
+      });
     }
     
     months.push({
@@ -286,17 +313,27 @@ window.FundModel.runModel = function(assumptions, capitalInputs, returnMult, bdm
       usFeederExpense, usFeederLpExpense,
       bdmRetainerExpense, bdmTrailingComm, bdmFeeShare: bdmFeeShare, totalBdmExpense,
       brokerRetainerExpense, brokerTrailingComm, totalBrokerExpense,
-      totalOpex, totalOpexCash, totalCashExpenses, totalExpenses, ebitda, ebt, netIncome, netCashFlow,
-      closingCash: adjustedClosingCash, founderFundingRequired, cumulativeFounderFunding, shareholderLoanBalance,
+      totalOpex, totalOpexCash, totalCashExpenses, totalExpenses, ebitda, ebt, netIncome, 
+      netCashFlow: isPreLaunch ? 0 : ebitda,
+      closingCash, founderFundingRequired, cumulativeFounderFunding, shareholderLoanBalance,
     });
   });
   
-  return { months, preLaunchData, preLaunchCosts, breakEvenMonth, cumulativeFounderFunding, startingCashUSD };
+  // Calculate cash low point
+  const postLaunch = months.filter(m => !m.isPreLaunch);
+  const cashLowMonth = postLaunch.reduce((low, m) => 
+    (m.closingCash < low.closingCash) ? m : low, postLaunch[0] || { closingCash: 0, month: 0 });
+  
+  return { 
+    months, preLaunchData, preLaunchExpenses, breakEvenMonth, 
+    cumulativeFounderFunding, startingCashUSD,
+    cashLow: { month: cashLowMonth.month, amount: cashLowMonth.closingCash },
+    shareholderLoanInitial: preLaunchCosts,
+  };
 };
 
+// Legacy function for backwards compatibility
 window.FundModel.getInitialShareholderLoan = function() {
   const slConfig = window.FundModel.SHAREHOLDER_LOAN || {};
-  const items = slConfig.initialItems || [];
-  return items.filter(item => item.description !== 'US Feeder Fund')
-              .reduce((sum, item) => sum + (item.amount || 0), 0);
+  return slConfig.preLaunchCosts?.total || 126000;
 };

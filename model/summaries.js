@@ -1,5 +1,5 @@
-// model/summaries.js - Calculate annual summaries
-// v9.5: Added newAUM, redemptions to yearly summaries
+// model/summaries.js - Calculate annual summaries and loan status
+// v10.15: Added getStoneParkStatus and getShareholderLoanStatus
 
 window.FundModel = window.FundModel || {};
 
@@ -25,6 +25,55 @@ window.FundModel.calculateFounderSplit = function(totalFunding) {
   return { total: totalFunding, ian: totalFunding * 0.5, paul: totalFunding * 0.5 };
 };
 
+// Stone Park (Starting Capital) status
+window.FundModel.getStoneParkStatus = function(model) {
+  const stonePark = window.FundModel.STONE_PARK || { availableUSD: 367000 };
+  const initial = stonePark.availableUSD || 367000;
+  
+  // Find cash low point to determine utilization
+  const postLaunch = model.months ? model.months.filter(m => !m.isPreLaunch) : [];
+  const minCash = postLaunch.reduce((min, m) => Math.min(min, m.closingCash || 0), initial);
+  const utilized = minCash < 0 ? initial + Math.abs(minCash) : initial - minCash;
+  const remaining = initial - utilized;
+  
+  return {
+    initial,
+    utilized: Math.max(0, utilized),
+    remaining: Math.max(0, remaining),
+    utilizationPct: utilized / initial,
+    cashLow: minCash,
+  };
+};
+
+// Shareholder Loan (Money owed TO founders) status
+window.FundModel.getShareholderLoanStatus = function(model) {
+  const slConfig = window.FundModel.SHAREHOLDER_LOAN || {};
+  const preLaunchTotal = slConfig.preLaunchCosts?.total || 126000;
+  
+  // Get final shareholder loan balance from model
+  const lastMonth = model.months && model.months.length > 0 
+    ? model.months[model.months.length - 1] 
+    : null;
+  const currentBalance = lastMonth ? lastMonth.shareholderLoanBalance || 0 : preLaunchTotal;
+  
+  // Calculate salary foregone (accumulated accruals)
+  const postLaunch = model.months ? model.months.filter(m => !m.isPreLaunch) : [];
+  const ianSalaryForegone = postLaunch.reduce((sum, m) => sum + (m.ianAccrual || 0), 0);
+  const paulSalaryForegone = postLaunch.reduce((sum, m) => sum + (m.paulAccrual || 0), 0);
+  
+  return {
+    preLaunch: preLaunchTotal,
+    ianSalaryForegone,
+    paulSalaryForegone,
+    totalSalaryForegone: ianSalaryForegone + paulSalaryForegone,
+    total: currentBalance,
+    byFounder: {
+      ian: preLaunchTotal + ianSalaryForegone,  // Ian absorbed pre-launch costs
+      paul: paulSalaryForegone,
+    },
+  };
+};
+
 window.FundModel.calculateSummaries = function(months, startingCashUSD) {
   const postLaunch = months.filter(m => !m.isPreLaunch);
   const y1 = postLaunch.slice(0, 12);
@@ -47,6 +96,7 @@ window.FundModel.calculateSummaries = function(months, startingCashUSD) {
     totalLPCapital: sumF(arr, 'lpCapital'),
     netCash: lastOf(arr, 'closingCash'),
     founderFunding: sumF(arr, 'founderFundingRequired'),
+    shareholderLoan: lastOf(arr, 'shareholderLoanBalance'),
   });
   
   const y1S = sumY(y1), y2S = sumY(y2), y3S = sumY(y3);

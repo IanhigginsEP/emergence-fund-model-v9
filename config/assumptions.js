@@ -1,4 +1,4 @@
-// config/assumptions.js v10.14 - Added BDM trailing commission parameters
+// config/assumptions.js v10.15 - Clear separation of Stone Park and Shareholder Loan
 // Model Start: March 1, 2025 | Fund Launch: February 1, 2026 | Lewis: Aug 1, 2025
 window.FundModel = window.FundModel || {};
 
@@ -7,6 +7,16 @@ window.FundModel.TIMELINE = {
   projectionMonths: 36, preLaunchMonths: 11, rollingBalanceMonths: 18,
 };
 
+// STONE PARK LOAN (Starting Capital at M0)
+// This is the $367K available from Paul & Ian's 2/3 share of Stone Park
+window.FundModel.STONE_PARK = {
+  totalEUR: 550000,
+  founderSharePct: 0.6667,  // Paul & Ian's 2/3
+  fxRate: 1.27,             // EUR to USD
+  availableUSD: 367000,     // Starting cash at M0 - THIS IS THE STARTING POT
+};
+
+// Legacy alias for backwards compatibility
 window.FundModel.FUNDING = { startingCashUSD: 367000 };
 
 window.FundModel.PERSONNEL = {
@@ -32,7 +42,20 @@ window.FundModel.FUND_ECONOMICS = {
 
 window.FundModel.REVENUE = { mgmtFeeRate: 0.015, carryRate: 0.175, carryBelowLine: true, hwm: true };
 
+// SHAREHOLDER LOAN (Money owed TO founders from pre-launch costs)
+// These are costs Ian absorbed during M-11 to M-1 - NOT deducted from Stone Park
 window.FundModel.SHAREHOLDER_LOAN = {
+  // Pre-launch costs (tracked separately from starting cash)
+  preLaunchCosts: {
+    lewisSalary: 84000,     // $7K × 12 months (approx)
+    setupCosts: 10000,
+    legal: 15000,
+    adrianHistorical: 8000,
+    historicalTravel: 6000,
+    other: 3000,
+    total: 126000,          // Sum - owed to Ian
+  },
+  // Initial items (historical - for backwards compatibility)
   initialItems: [
     { description: 'Setup invoices', amount: 10000 },
     { description: 'PPM legal fees', amount: 15000 },
@@ -42,7 +65,13 @@ window.FundModel.SHAREHOLDER_LOAN = {
     { description: 'Ian personal costs', amount: 100000 },
     { description: 'Paul sundry costs', amount: 100000 },
   ],
-  repaymentStartYear: 3, interestRate: 0.05,
+  repaymentStartYear: 3, 
+  interestRate: 0.05,
+  // Recovery settings
+  recovery: {
+    triggerMonth: 24,
+    rate: 0.5,  // 50% of excess cash
+  },
 };
 
 window.FundModel.US_FEEDER = { amount: 30000, month: null, isGpExpense: true };
