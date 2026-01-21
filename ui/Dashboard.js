@@ -1,5 +1,5 @@
-// ui/Dashboard.js - Summary KPI cards and annual table
-// v9.5: KPITable with Rolling AUM, New AUM, Redemptions, Rev % AUM, EBITDA % AUM
+// ui/Dashboard.js - Summary KPI cards, Cash Flow, and KPI Table
+// v9.5: KPI Table positioned below Cash Flow table on dashboard
 
 window.FundModel = window.FundModel || {};
 
@@ -62,8 +62,14 @@ window.FundModel.Dashboard = function Dashboard({ model, scenarioName, onResetSc
         </div>
       </div>
       
+      {/* Cash Flow Table - primary position */}
+      <DashboardCashFlow model={model} fmt={fmt} fmtBracket={fmtBracket} />
+      
+      {/* KPI Table - immediately below Cash Flow */}
+      <DashboardKPITable model={model} fmt={fmt} pct={pct} />
+      
+      {/* Annual Summary at bottom */}
       <AnnualTable summary={summary} fmt={fmt} fmtBracket={fmtBracket} />
-      <KPITable model={model} fmt={fmt} pct={pct} />
     </div>
   );
 };
@@ -76,6 +82,87 @@ function KPICard({ label, value, color, border }) {
       <p className="text-xs text-gray-500 uppercase">{label}</p>
       <p className={`text-2xl font-bold ${colorClasses[color] || colorClasses.default}`}>{value}</p>
     </div>
+  );
+}
+
+function DashboardCashFlow({ model, fmt, fmtBracket }) {
+  const { months } = model;
+  if (!months || months.length === 0) return null;
+  const postLaunch = months.filter(m => !m.isPreLaunch).slice(0, 12);
+  return (
+    <div className="bg-white rounded-lg shadow p-4 overflow-x-auto">
+      <h2 className="font-semibold mb-3">Cash Flow Statement (Year 1)</h2>
+      <table className="w-full text-xs">
+        <thead><tr className="border-b bg-gray-50 sticky top-0 z-20">
+          <th className="py-2 px-2 text-left sticky left-0 bg-gray-50 z-30 min-w-32">Line Item</th>
+          {postLaunch.map(m => <th key={m.month} className="py-2 px-1 text-center min-w-16">{m.label}</th>)}
+        </tr></thead>
+        <tbody>
+          <CashFlowRow label="Operating Revenue" months={postLaunch} field="operatingRevenue" fmt={fmt} color="green" bg="green" />
+          <CashFlowRow label="Cash Expenses" months={postLaunch} field="totalCashExpenses" fmt={fmt} color="red" bracket />
+          <CashFlowRow label="EBITDA" months={postLaunch} field="ebitda" fmt={fmtBracket} dynamic bg="blue" bold />
+          <CashFlowRow label="Founder Funding" months={postLaunch} field="founderFundingRequired" fmt={fmt} color="amber" bg="amber" />
+          <CashFlowRow label="Cash Balance" months={postLaunch} field="closingCash" fmt={fmtBracket} dynamic bg="gray" bold />
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+function CashFlowRow({ label, months, field, fmt, color, bg, bold, bracket, dynamic }) {
+  const bgClass = bg ? `bg-${bg}-50` : '';
+  return (
+    <tr className={`border-b ${bgClass}`}>
+      <td className={`py-1 px-2 sticky left-0 z-10 ${bgClass || 'bg-white'} ${bold ? 'font-semibold' : ''}`}>{label}</td>
+      {months.map(m => {
+        let val = m[field] || 0;
+        let colorClass = '';
+        if (dynamic) colorClass = val >= 0 ? 'text-green-600' : 'text-red-600';
+        else if (color) colorClass = `text-${color}-600`;
+        const display = bracket && val < 0 ? '(' + fmt(Math.abs(val)) + ')' : fmt(val);
+        return <td key={m.month} className={`py-1 px-1 text-right font-mono ${colorClass}`}>{val !== 0 ? display : '-'}</td>;
+      })}
+    </tr>
+  );
+}
+
+function DashboardKPITable({ model, fmt, pct }) {
+  const { months } = model;
+  if (!months || months.length === 0) return null;
+  const postLaunch = months.filter(m => !m.isPreLaunch).slice(0, 12);
+  return (
+    <div className="bg-white rounded-lg shadow p-4 overflow-x-auto">
+      <h2 className="font-semibold mb-3">KPI Metrics (Year 1)</h2>
+      <table className="w-full text-xs">
+        <thead><tr className="border-b bg-gray-50 sticky top-0 z-20">
+          <th className="py-2 px-2 text-left sticky left-0 bg-gray-50 z-30 min-w-28">KPI</th>
+          {postLaunch.map(m => <th key={m.month} className="py-2 px-1 text-center min-w-16">{m.label}</th>)}
+        </tr></thead>
+        <tbody>
+          <KPIRow label="Rolling AUM" months={postLaunch} field="closingAUM" fmt={fmt} />
+          <KPIRow label="New AUM" months={postLaunch} field="newCapital" fmt={fmt} color="blue" bg="blue" />
+          <KPIRow label="Redemptions" months={postLaunch} field="redemption" fmt={fmt} color="orange" bg="orange" />
+          <KPIRow label="Rev % AUM" months={postLaunch} compute={m => m.openingAUM > 0 ? (m.operatingRevenue / m.openingAUM) * 12 : 0} fmt={pct} color="green" />
+          <KPIRow label="EBITDA % AUM" months={postLaunch} compute={m => m.openingAUM > 0 ? (m.ebitda / m.openingAUM) * 12 : 0} fmt={pct} dynamic bold bg="gray" />
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+function KPIRow({ label, months, field, compute, fmt, color, bg, bold, dynamic }) {
+  const bgClass = bg ? `bg-${bg}-50` : '';
+  return (
+    <tr className={`border-b ${bgClass}`}>
+      <td className={`py-1 px-2 sticky left-0 z-10 ${bgClass || 'bg-white'} ${bold ? 'font-bold' : 'font-medium'}`}>{label}</td>
+      {months.map(m => {
+        const val = compute ? compute(m) : (m[field] || 0);
+        let colorClass = '';
+        if (dynamic) colorClass = val >= 0 ? 'text-green-700' : 'text-red-700';
+        else if (color) colorClass = `text-${color}-600`;
+        return <td key={m.month} className={`py-1 px-1 text-right font-mono ${colorClass} ${bold ? 'font-bold' : ''}`}>{val !== 0 ? fmt(val) : '-'}</td>;
+      })}
+    </tr>
   );
 }
 
@@ -100,38 +187,6 @@ function AnnualTable({ summary, fmt, fmtBracket }) {
           const bgClass = r.bg ? `bg-${r.bg}-50` : '';
           return (<tr key={i} className={`border-b ${bgClass}`}><td className={`py-2 sticky left-0 bg-white z-10 ${r.bold ? 'font-semibold' : ''}`}>{r.label}</td><td className={`text-right font-mono ${y1Color}`}>{fmtBracket(r.y1)}</td><td className={`text-right font-mono ${y2Color}`}>{fmtBracket(r.y2)}</td><td className={`text-right font-mono font-bold ${r.color ? `text-${r.color}-600` : ''}`}>{r.label === 'Net Cash' || r.label === 'Ending AUM' ? '-' : fmtBracket(total)}</td></tr>);
         })}</tbody>
-      </table>
-    </div>
-  );
-}
-
-function KPITable({ model, fmt, pct }) {
-  const { months, summary } = model;
-  if (!months || months.length === 0) return null;
-  const postLaunch = months.filter(m => !m.isPreLaunch).slice(0, 24);
-  return (
-    <div className="bg-white rounded-lg shadow p-4 overflow-x-auto">
-      <h2 className="font-semibold mb-3">Monthly KPI Table</h2>
-      <table className="w-full text-xs">
-        <thead><tr className="border-b bg-gray-50"><th className="py-2 px-2 text-left sticky left-0 bg-gray-50 z-10 min-w-28">KPI</th>
-          {postLaunch.map(m => <th key={m.month} className="py-2 px-1 text-center min-w-16">{m.label}</th>)}
-        </tr></thead>
-        <tbody>
-          <tr className="border-b"><td className="py-1 px-2 font-medium sticky left-0 bg-white z-10">Rolling AUM</td>
-            {postLaunch.map(m => <td key={m.month} className="py-1 px-1 text-right font-mono">{fmt(m.closingAUM)}</td>)}</tr>
-          <tr className="border-b bg-blue-50"><td className="py-1 px-2 font-medium sticky left-0 bg-blue-50 z-10">New AUM</td>
-            {postLaunch.map(m => <td key={m.month} className="py-1 px-1 text-right font-mono text-blue-600">{fmt(m.newCapital)}</td>)}</tr>
-          <tr className="border-b bg-orange-50"><td className="py-1 px-2 font-medium sticky left-0 bg-orange-50 z-10">Redemptions</td>
-            {postLaunch.map(m => <td key={m.month} className="py-1 px-1 text-right font-mono text-orange-600">{m.redemption > 0 ? fmt(m.redemption) : '-'}</td>)}</tr>
-          <tr className="border-b bg-green-50"><td className="py-1 px-2 font-medium sticky left-0 bg-green-50 z-10">Revenue</td>
-            {postLaunch.map(m => <td key={m.month} className="py-1 px-1 text-right font-mono text-green-600">{fmt(m.operatingRevenue)}</td>)}</tr>
-          <tr className="border-b"><td className="py-1 px-2 font-medium sticky left-0 bg-white z-10">Rev % AUM</td>
-            {postLaunch.map(m => <td key={m.month} className="py-1 px-1 text-right font-mono">{pct(m.openingAUM > 0 ? m.operatingRevenue / m.openingAUM : 0)}</td>)}</tr>
-          <tr className="border-b"><td className="py-1 px-2 font-medium sticky left-0 bg-white z-10">EBITDA</td>
-            {postLaunch.map(m => <td key={m.month} className={`py-1 px-1 text-right font-mono ${m.ebitda >= 0 ? 'text-green-600' : 'text-red-600'}`}>{fmt(m.ebitda)}</td>)}</tr>
-          <tr className="border-b bg-gray-100"><td className="py-1 px-2 font-bold sticky left-0 bg-gray-100 z-10">EBITDA % AUM</td>
-            {postLaunch.map(m => <td key={m.month} className={`py-1 px-1 text-right font-mono font-bold ${m.ebitda >= 0 ? 'text-green-700' : 'text-red-700'}`}>{pct(m.openingAUM > 0 ? m.ebitda / m.openingAUM : 0)}</td>)}</tr>
-        </tbody>
       </table>
     </div>
   );
