@@ -1,6 +1,5 @@
 // model/engine.js - Core P&L calculation loop
-// v10.0: Founder salary toggle modes (untilBreakeven/untilMonth/always/never)
-// v10.8: US Feeder Fund expense - triggered at selected month, GP/LP toggle
+// v10.9: Added trailing broker commission + BDM retainer expense
 
 window.FundModel = window.FundModel || {};
 
@@ -14,12 +13,13 @@ window.FundModel.shouldRollUp = function(mode, endMonth, currentMonth, breakEven
   if (mode === 'untilBreakeven') {
     return breakEvenMonth === null || currentMonth <= breakEvenMonth;
   }
-  return true; // default: roll up
+  return true;
 };
 
 window.FundModel.runModel = function(assumptions, capitalInputs, returnMult, bdmRevShare) {
   returnMult = returnMult || 1.0;
-  bdmRevShare = bdmRevShare || 0;
+  // Use bdmRevShare from assumptions if not passed directly
+  bdmRevShare = bdmRevShare !== undefined ? bdmRevShare : (assumptions.bdmRevSharePct || 0);
   
   const revenueConfig = window.FundModel.REVENUE || {};
   const carryBelowLine = revenueConfig.carryBelowLine !== false;
@@ -41,7 +41,20 @@ window.FundModel.runModel = function(assumptions, capitalInputs, returnMult, bdm
   // US Feeder Fund settings
   const usFeederMonth = assumptions.usFeederMonth;
   const usFeederAmount = assumptions.usFeederAmount || 30000;
-  const usFeederIsGpExpense = assumptions.usFeederIsGpExpense !== false; // default true
+  const usFeederIsGpExpense = assumptions.usFeederIsGpExpense !== false;
+  
+  // BDM settings
+  const bdmStartMonth = assumptions.bdmStartMonth || 7;
+  const bdmRetainer = assumptions.bdmRetainer || 0;
+  
+  // Broker trailing commission settings
+  const brokerStartMonth = assumptions.brokerStartMonth || 3;
+  const brokerRetainer = assumptions.brokerRetainer || 0;
+  const brokerCommRate = assumptions.brokerCommissionRate || 0.01;
+  const brokerTrailingMonths = assumptions.brokerTrailingMonths || 12;
+  
+  // Track broker raises for trailing commission calculation
+  const brokerRaiseHistory = []; // { month, amount }
   
   const months = [];
   let breakEvenMonth = null;
@@ -65,6 +78,12 @@ window.FundModel.runModel = function(assumptions, capitalInputs, returnMult, bdm
     const gpOrganic = isPreLaunch ? 0 : inp.gpOrganic;
     const bdmRaise = isPreLaunch ? 0 : inp.bdmRaise;
     const brokerRaise = isPreLaunch ? 0 : inp.brokerRaise;
+    
+    // Track broker raises for trailing commission
+    if (brokerRaise > 0) {
+      brokerRaiseHistory.push({ month: m, amount: brokerRaise });
+    }
+    
     const lpCapital = gpOrganic + bdmRaise + brokerRaise;
     const gpCommitment = lpCapital * assumptions.gpCommitmentRate;
     const newCapital = lpCapital + gpCommitment;
@@ -141,23 +160,42 @@ window.FundModel.runModel = function(assumptions, capitalInputs, returnMult, bdm
     const compliance = isPreLaunch ? 0 : assumptions.compliance;
     const setupCost = m === 0 ? assumptions.setupCost : 0;
     
-    // US Feeder Fund expense (triggered at specific month)
+    // US Feeder Fund expense
     let usFeederExpense = 0;
     let usFeederLpExpense = 0;
     if (usFeederMonth !== null && m === usFeederMonth) {
       if (usFeederIsGpExpense) {
-        usFeederExpense = usFeederAmount; // GP expense - hits cash flow
+        usFeederExpense = usFeederAmount;
       } else {
-        usFeederLpExpense = usFeederAmount; // LP expense - separate tracking
+        usFeederLpExpense = usFeederAmount;
       }
     }
     
+    // BDM expenses: retainer (from start month onwards)
+    const bdmRetainerExpense = (!isPreLaunch && m >= bdmStartMonth) ? bdmRetainer : 0;
+    
+    // Broker expenses: retainer + trailing commission
+    const brokerRetainerExpense = (!isPreLaunch && m >= brokerStartMonth) ? brokerRetainer : 0;
+    
+    // Calculate trailing commission: sum of commissions on raises within trailing window
+    let brokerTrailingComm = 0;
+    if (!isPreLaunch) {
+      brokerRaiseHistory.forEach(raise => {
+        // Commission applies for brokerTrailingMonths after the raise
+        if (m >= raise.month && m < raise.month + brokerTrailingMonths) {
+          brokerTrailingComm += raise.amount * brokerCommRate / 12; // Monthly portion of annual rate
+        }
+      });
+    }
+    
+    const totalBrokerExpense = brokerRetainerExpense + brokerTrailingComm;
+    const totalBdmExpense = bdmRetainerExpense + bdmFeeShare; // Rev share is also tracked here
+    
     const totalOpexCash = officeIT + marketingCash + travelCash + compliance + setupCost + usFeederExpense;
     const totalOpex = officeIT + marketingAmount + travelAmount + compliance + setupCost + usFeederExpense;
-    const brokerCommission = brokerRaise * assumptions.brokerCommissionRate;
     
-    const totalCashExpenses = totalCashSalaries + totalOpexCash + brokerCommission;
-    const totalExpenses = totalSalaries + totalOpex + brokerCommission;
+    const totalCashExpenses = totalCashSalaries + totalOpexCash + totalBrokerExpense + bdmRetainerExpense;
+    const totalExpenses = totalSalaries + totalOpex + totalBrokerExpense + bdmRetainerExpense;
     
     // EBITDA & EBT
     const ebitda = operatingRevenue - totalCashExpenses;
@@ -201,7 +239,9 @@ window.FundModel.runModel = function(assumptions, capitalInputs, returnMult, bdm
       officeIT, marketing: marketingAmount, marketingCash, marketingAccrual, 
       travel: travelAmount, travelCash, travelAccrual, compliance, setupCost,
       usFeederExpense, usFeederLpExpense,
-      totalOpex, totalOpexCash, brokerCommission,
+      bdmRetainerExpense, bdmFeeShare: bdmFeeShare, totalBdmExpense,
+      brokerRetainerExpense, brokerTrailingComm, totalBrokerExpense,
+      totalOpex, totalOpexCash,
       totalCashExpenses, totalExpenses, ebitda, ebt, netIncome, netCashFlow,
       closingCash: adjustedClosingCash, founderFundingRequired, cumulativeFounderFunding, shareholderLoanBalance,
     });
@@ -213,7 +253,6 @@ window.FundModel.runModel = function(assumptions, capitalInputs, returnMult, bdm
 window.FundModel.getInitialShareholderLoan = function() {
   const slConfig = window.FundModel.SHAREHOLDER_LOAN || {};
   const items = slConfig.initialItems || [];
-  // Only include items that are NOT the US Feeder (it's handled separately by month trigger)
   return items.filter(item => item.description !== 'US Feeder Fund')
               .reduce((sum, item) => sum + (item.amount || 0), 0);
 };

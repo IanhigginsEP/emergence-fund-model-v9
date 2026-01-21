@@ -1,5 +1,5 @@
 // ui/Tables.js - Monthly P&L and Cashflow tables with frozen columns
-// v10.0: Personnel breakdown added for verification (Batch 5)
+// v10.9: Added BDM/Broker expense lines in Cashflow Statement
 
 window.FundModel = window.FundModel || {};
 
@@ -49,7 +49,7 @@ window.FundModel.CashflowStatement = function CashflowStatement({ model, showPer
           onClick={() => setExpanded(!expanded)}
           className="text-xs px-2 py-1 bg-gray-100 hover:bg-gray-200 rounded"
         >
-          {expanded ? 'Hide Personnel' : 'Show Personnel'}
+          {expanded ? 'Hide Details' : 'Show Details'}
         </button>
       </div>
       <table className="w-full text-xs freeze-table">
@@ -73,13 +73,23 @@ window.FundModel.CashflowStatement = function CashflowStatement({ model, showPer
               <TableRow label="  Adrian" months={postLaunch} field="adrianSalary" fmt={fmt} color="red" />
               <TableRow label="  Chairman" months={postLaunch} field="chairmanCost" fmt={fmt} color="red" />
               <TableRow label="Total Cash Salaries" months={postLaunch} field="totalCashSalaries" fmt={fmtBracket} color="red" bold />
+              
               <tr className="bg-yellow-50"><td colSpan={postLaunch.length+1} className="py-1 px-2 text-xs font-medium text-yellow-800 sticky left-0">OpEx</td></tr>
               <TableRow label="  Marketing" months={postLaunch} field="marketingCash" fmt={fmt} color="red" />
               <TableRow label="  Travel" months={postLaunch} field="travelCash" fmt={fmt} color="red" />
               <TableRow label="  Office/IT" months={postLaunch} field="officeIT" fmt={fmt} color="red" />
               <TableRow label="  Compliance" months={postLaunch} field="compliance" fmt={fmt} color="red" />
-              <TableRow label="  Broker Comm" months={postLaunch} field="brokerCommission" fmt={fmt} color="red" />
+              <TableRow label="  US Feeder" months={postLaunch} field="usFeederExpense" fmt={fmt} color="red" />
               <TableRow label="Total OpEx" months={postLaunch} field="totalOpexCash" fmt={fmtBracket} color="red" bold />
+              
+              <tr className="bg-green-50"><td colSpan={postLaunch.length+1} className="py-1 px-2 text-xs font-medium text-green-800 sticky left-0">BDM Costs</td></tr>
+              <TableRow label="  BDM Retainer" months={postLaunch} field="bdmRetainerExpense" fmt={fmt} color="green" />
+              <TableRow label="  BDM Rev Share" months={postLaunch} field="bdmFeeShare" fmt={fmt} color="green" />
+              
+              <tr className="bg-orange-50"><td colSpan={postLaunch.length+1} className="py-1 px-2 text-xs font-medium text-orange-800 sticky left-0">Broker Costs</td></tr>
+              <TableRow label="  Broker Retainer" months={postLaunch} field="brokerRetainerExpense" fmt={fmt} color="orange" />
+              <TableRow label="  Trailing Comm" months={postLaunch} field="brokerTrailingComm" fmt={fmt} color="orange" />
+              <TableRow label="Total Broker" months={postLaunch} field="totalBrokerExpense" fmt={fmtBracket} color="orange" bold />
             </>
           )}
           
@@ -99,7 +109,7 @@ window.FundModel.CashflowStatement = function CashflowStatement({ model, showPer
           <TableRow label="Shareholder Loan" months={postLaunch} field="shareholderLoanBalance" fmt={fmt} color="amber" bg="amber" bold />
         </tbody>
       </table>
-      <p className="text-xs text-gray-500 mt-2">Negatives in brackets • Click 'Show Personnel' for breakdown</p>
+      <p className="text-xs text-gray-500 mt-2">Negatives in brackets • Click 'Show Details' for full breakdown incl. BDM/Broker</p>
     </div>
   );
 };

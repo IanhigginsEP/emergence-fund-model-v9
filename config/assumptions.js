@@ -1,6 +1,5 @@
 // config/assumptions.js - All editable model inputs
-// v10.0: Founder salary toggles (roll-up until date OR breakeven, then cash)
-// v10.8: US Feeder Fund month selector and GP/LP toggle
+// v10.9: Added BDM/Broker fee structure fields to DEFAULT_ASSUMPTIONS
 
 window.FundModel = window.FundModel || {};
 
@@ -9,7 +8,7 @@ window.FundModel.TIMELINE = {
   projectionMonths: 36,
   preLaunchMonths: 12,
   rollingBalanceMonths: 18,
-  targetBreakevenMonth: null, // OUTPUT, never force
+  targetBreakevenMonth: null,
 };
 
 window.FundModel.FUNDING = {
@@ -20,8 +19,8 @@ window.FundModel.PERSONNEL = {
   ian: { 
     preBESalary: 5000, 
     postBESalary: 10000, 
-    rollUpMode: 'untilBreakeven', // 'untilBreakeven' | 'untilMonth' | 'always' | 'never'
-    rollUpEndMonth: null, // if rollUpMode = 'untilMonth', switch to cash at this month
+    rollUpMode: 'untilBreakeven',
+    rollUpEndMonth: null,
   },
   paul: { 
     preBESalary: 5000, 
@@ -82,17 +81,27 @@ window.FundModel.SHAREHOLDER_LOAN = {
   interestRate: 0.05,
 };
 
-// US Feeder Fund settings (extracted for easier access)
 window.FundModel.US_FEEDER = {
   amount: 30000,
-  month: null,       // null = not triggered, 0-35 = trigger month
-  isGpExpense: true, // true = GP pays, false = LP pays (fund expense)
+  month: null,
+  isGpExpense: true,
 };
 
 window.FundModel.CAPITAL = {
   gpOrganic: { m0to11: 2500000, m12to35: 2500000 },
-  bdm: { startMonth: 7, monthly: 500000, retainer: 0, revSharePct: 0 },
-  brokerRaise: { startMonth: 3, monthly: 250000, retainer: 0, commissionRate: 0.01, trailingMonths: 12 },
+  bdm: { 
+    startMonth: 7, 
+    monthly: 500000, 
+    retainer: 0,        // Monthly retainer amount
+    revSharePct: 0,     // % of mgmt fee on BDM-raised AUM
+  },
+  brokerRaise: { 
+    startMonth: 3, 
+    monthly: 250000, 
+    retainer: 0,        // Monthly retainer amount
+    commissionRate: 0.01, // Annual commission rate on capital raised
+    trailingMonths: 12,   // Months to apply trailing commission
+  },
 };
 
 window.FundModel.SHARE_CLASSES = {
@@ -149,9 +158,15 @@ window.FundModel.DEFAULT_ASSUMPTIONS = {
   travelRollUp: window.FundModel.OPEX.travel.rollUpToSL,
   compliance: window.FundModel.OPEX.leventus + window.FundModel.OPEX.adminCustodial,
   setupCost: window.FundModel.OPEX.setupCost,
-  // Commission
+  // BDM settings
+  bdmStartMonth: window.FundModel.CAPITAL.bdm.startMonth,
+  bdmRetainer: window.FundModel.CAPITAL.bdm.retainer,
+  bdmRevSharePct: window.FundModel.CAPITAL.bdm.revSharePct,
+  // Broker settings
   brokerStartMonth: window.FundModel.CAPITAL.brokerRaise.startMonth,
+  brokerRetainer: window.FundModel.CAPITAL.brokerRaise.retainer,
   brokerCommissionRate: window.FundModel.CAPITAL.brokerRaise.commissionRate,
+  brokerTrailingMonths: window.FundModel.CAPITAL.brokerRaise.trailingMonths,
   // US Feeder Fund
   usFeederMonth: window.FundModel.US_FEEDER.month,
   usFeederAmount: window.FundModel.US_FEEDER.amount,

@@ -1,6 +1,5 @@
-// ui/Controls.js - Input controls with Paul cash draw toggle
-// v9.6: Added paulCashDraw toggle under Founder Salaries
-// v10.8: Added US Feeder Fund controls (month selector + GP/LP toggle)
+// ui/Controls.js - Input controls with BDM & Broker fee configuration
+// v10.9: Added BDM/Broker sections with retainer, rev share, trailing commission
 
 window.FundModel = window.FundModel || {};
 
@@ -49,6 +48,31 @@ window.FundModel.Controls = function Controls({ assumptions, onUpdate }) {
         {assumptions.cooEnabled && <NumInput label="COO Salary" value={assumptions.cooSalary} onChange={v => upd('cooSalary', v)} suffix="$" step={500} />}
       </Section>
       
+      <Section title="BDM Economics" color="green">
+        <p className="text-xs text-gray-500 mb-2">Revenue share reduces GP mgmt fee on BDM-raised AUM</p>
+        <NumInput label="Start Month" value={assumptions.bdmStartMonth || 7} onChange={v => upd('bdmStartMonth', v)} suffix="M" />
+        <NumInput label="Retainer" value={assumptions.bdmRetainer || 0} onChange={v => upd('bdmRetainer', v)} suffix="$/mo" step={500} />
+        <NumInput label="Rev Share" value={(assumptions.bdmRevSharePct || 0) * 100} onChange={v => upd('bdmRevSharePct', v/100)} suffix="%" step={0.5} />
+        {(assumptions.bdmRetainer > 0 || assumptions.bdmRevSharePct > 0) && (
+          <div className="mt-2 p-2 bg-green-100 rounded text-xs">
+            <strong>Active:</strong> ${assumptions.bdmRetainer || 0}/mo retainer + {((assumptions.bdmRevSharePct || 0)*100).toFixed(1)}% mgmt fee share
+          </div>
+        )}
+      </Section>
+      
+      <Section title="Broker Economics" color="orange">
+        <p className="text-xs text-gray-500 mb-2">Trailing commission on capital raised for N months</p>
+        <NumInput label="Start Month" value={assumptions.brokerStartMonth || 3} onChange={v => upd('brokerStartMonth', v)} suffix="M" />
+        <NumInput label="Retainer" value={assumptions.brokerRetainer || 0} onChange={v => upd('brokerRetainer', v)} suffix="$/mo" step={500} />
+        <NumInput label="Commission" value={(assumptions.brokerCommissionRate || 0.01) * 100} onChange={v => upd('brokerCommissionRate', v/100)} suffix="%" step={0.1} />
+        <NumInput label="Trailing Months" value={assumptions.brokerTrailingMonths || 12} onChange={v => upd('brokerTrailingMonths', v)} suffix="M" />
+        {assumptions.brokerRetainer > 0 && (
+          <div className="mt-2 p-2 bg-orange-100 rounded text-xs">
+            <strong>Active:</strong> ${assumptions.brokerRetainer}/mo + {((assumptions.brokerCommissionRate || 0.01)*100).toFixed(1)}% trailing for {assumptions.brokerTrailingMonths || 12}mo
+          </div>
+        )}
+      </Section>
+      
       <Section title="Operating Expenses">
         <NumInput label="Office/IT" value={assumptions.officeIT} onChange={v => upd('officeIT', v)} suffix="$" step={250} />
         <NumInput label="Marketing" value={assumptions.marketing} onChange={v => upd('marketing', v)} suffix="$" step={250} />
@@ -75,8 +99,8 @@ window.FundModel.Controls = function Controls({ assumptions, onUpdate }) {
         />
         {assumptions.usFeederMonth !== null && (
           <div className="mt-2 p-2 bg-purple-100 rounded text-xs">
-            <strong>Active:</strong> ${(assumptions.usFeederAmount || 30000).toLocaleString()} expense at M{assumptions.usFeederMonth} 
-            ({assumptions.usFeederIsGpExpense !== false ? 'GP' : 'LP'} expense)
+            <strong>Active:</strong> ${(assumptions.usFeederAmount || 30000).toLocaleString()} at M{assumptions.usFeederMonth} 
+            ({assumptions.usFeederIsGpExpense !== false ? 'GP' : 'LP'})
           </div>
         )}
       </Section>
@@ -125,7 +149,7 @@ window.FundModel.RecoverablesPanel = function RecoverablesPanel({ recoverables, 
 };
 
 function Section({ title, color, children }) {
-  const colorMap = { amber: 'bg-amber-50 border-amber-200', blue: 'bg-blue-50 border-blue-200', purple: 'bg-purple-50 border-purple-200' };
+  const colorMap = { amber: 'bg-amber-50 border-amber-200', blue: 'bg-blue-50 border-blue-200', purple: 'bg-purple-50 border-purple-200', green: 'bg-green-50 border-green-200', orange: 'bg-orange-50 border-orange-200' };
   const bgClass = colorMap[color] || 'bg-white border-gray-200';
   return (
     <div className={`rounded-lg shadow p-4 border ${bgClass}`}>
@@ -142,7 +166,7 @@ function NumInput({ label, value, onChange, suffix, step = 1 }) {
       <div className="flex items-center gap-1">
         <input type="number" value={value} onChange={e => onChange(parseFloat(e.target.value) || 0)} step={step}
           className="w-24 px-2 py-1 text-right text-blue-600 font-mono text-sm border border-gray-300 rounded" />
-        <span className="text-xs text-gray-500 w-6">{suffix}</span>
+        <span className="text-xs text-gray-500 w-8">{suffix}</span>
       </div>
     </div>
   );
