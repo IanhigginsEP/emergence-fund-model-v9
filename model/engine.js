@@ -1,5 +1,5 @@
 // model/engine.js - Core P&L calculation loop
-// v10.21: CRITICAL FIX - Founder funding = peak utilization of Stone Park pot
+// v10.22: CRITICAL FIX - Founder funding = peak utilization of Stone Park pot
 // The $367K IS founder capital. Any usage of it is founder funding utilized.
 
 window.FundModel = window.FundModel || {};
@@ -268,7 +268,7 @@ window.FundModel.runModel = function(assumptions, capitalInputs, returnMult, bdm
         closingCash = 0; // Assume founder injects to keep at 0
       }
       
-      // Track lowest cash point
+      // Track lowest cash point (for founder funding calculation)
       if (closingCash < lowestCashAmount) {
         lowestCashAmount = closingCash;
         lowestCashMonth = m;
@@ -313,18 +313,26 @@ window.FundModel.runModel = function(assumptions, capitalInputs, returnMult, bdm
     });
   });
   
-  // CRITICAL: Calculate founder funding utilized = starting pot - lowest cash point
+  // CRITICAL: Founder funding utilized = starting pot - lowest cash point
   // This is how much of the $367K was "at risk" / utilized
+  // Example: $367K start, lowest $264K = $103K utilized (split 50/50 = $51.5K each)
   const founderFundingUtilized = startingCashUSD - lowestCashAmount;
   
-  // Additional funding = sum of any amounts where cash went negative
+  // Additional funding = sum of any amounts where cash went negative (beyond $367K)
   const totalAdditionalFunding = months.reduce((sum, m) => sum + (m.additionalFundingRequired || 0), 0);
   
+  // Total founder funding = utilization + any additional required
+  const totalFounderFunding = founderFundingUtilized + totalAdditionalFunding;
+  
   return { 
-    months, preLaunchData, preLaunchExpenses, breakEvenMonth, 
+    months, 
+    preLaunchData, 
+    preLaunchExpenses, 
+    breakEvenMonth, 
     startingCashUSD,
-    founderFundingUtilized,  // NEW: Peak utilization of Stone Park pot
-    totalAdditionalFunding,   // NEW: Additional funding beyond $367K (if any)
+    founderFundingUtilized,           // Peak utilization of Stone Park pot
+    totalAdditionalFunding,            // Additional funding beyond $367K (if any)
+    cumulativeFounderFunding: totalFounderFunding, // ALIAS for Dashboard compatibility
     cashLow: { month: lowestCashMonth, amount: lowestCashAmount },
     shareholderLoanInitial: preLaunchCosts,
   };
