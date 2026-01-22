@@ -1,6 +1,8 @@
 // model/engine.js - Core P&L calculation loop
-// v10.22: CRITICAL FIX - Founder funding = peak utilization of Stone Park pot
+// v10.23: Founder funding = peak utilization of Stone Park pot
 // The $367K IS founder capital. Any usage of it is founder funding utilized.
+// Calculation: founderFundingUtilized = startingCash - lowestCashPoint
+// Example: $367K - $264K = $103K utilized (split 50/50 = $51.5K each)
 
 window.FundModel = window.FundModel || {};
 

@@ -1,5 +1,6 @@
 // ui/Dashboard.js - Summary KPI cards, Cash Flow, and KPI Table
-// v10.15: Fixed BUG-001 cash validation - M0 prevCash now uses M-1 closing cash
+// v10.23: Founder funding display shows peak utilization of Stone Park pot
+// Calculation: cumulativeFounderFunding = $367K - lowestCashPoint (~$103K)
 
 window.FundModel = window.FundModel || {};
 
@@ -20,6 +21,7 @@ window.FundModel.Dashboard = function Dashboard({ model, scenarioName, onResetSc
   };
   const fmt = fmtBracket;
   
+  // v10.23: cumulativeFounderFunding comes from engine.js as (startingCash - lowestCashPoint)
   const { summary, breakEvenMonth, cumulativeFounderFunding, months, startingCashUSD } = model;
   const founderSplit = { total: cumulativeFounderFunding || 0, ian: (cumulativeFounderFunding || 0) / 2, paul: (cumulativeFounderFunding || 0) / 2 };
   const lastMonth = months && months.length > 0 ? months[months.length - 1] : {};
